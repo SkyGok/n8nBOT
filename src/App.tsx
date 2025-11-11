@@ -3,14 +3,16 @@
  * Sets up routing and layout
  */
 
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { Dashboard } from '@/pages/Dashboard';
 
 function App() {
+  // Use basename for GitHub Pages deployment
+  const basename = import.meta.env.BASE_URL || '/';
+  
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <MainLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />

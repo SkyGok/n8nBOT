@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/n8nBOT/', // GitHub Pages base path
   plugins: [react()],
   resolve: {
     alias: {
