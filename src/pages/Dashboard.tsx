@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { SummaryCards } from '@/components/Dashboard/SummaryCards';
-import { TimeseriesChart } from '@/components/Dashboard/TimeseriesChart';
 import { EventsTable } from '@/components/Dashboard/EventsTable';
 import { EngagementCards } from '@/components/Dashboard/EngagementCards';
 import { ROIWidget } from '@/components/Dashboard/ROIWidget';
@@ -26,9 +25,6 @@ export const Dashboard: React.FC = () => {
 
       {/* ROI Calculator */}
       <ROIWidget />
-
-      {/* Time Series Chart */}
-      <TimeseriesChart />
 
       {/* Events Table */}
       <EventsTable />

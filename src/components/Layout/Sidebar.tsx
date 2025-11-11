@@ -1,10 +1,10 @@
 /**
  * Sidebar component for navigation
- * Provides navigation links and menu items
+ * Provides navigation links and menu items with nested sub-items
  * Toggleable on all screen sizes
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
@@ -17,6 +17,7 @@ interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
+  subItems?: NavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -39,6 +40,44 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    label: 'WhatsApp',
+    path: '/whatsapp',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H7a5 5 0 01-5-5V7a5 5 0 015-5h10a5 5 0 015 5v4a5 5 0 01-5 5h-3l-4 4z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Calls',
+    path: '/calls',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+      </svg>
+    ),
+    subItems: [
+      {
+        label: 'Inbound Call',
+        path: '/calls/inbound',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+        ),
+      },
+      {
+        label: 'Outbound Call',
+        path: '/calls/outbound',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
     label: 'Settings',
     path: '/settings',
     icon: (
@@ -52,6 +91,31 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
   const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    // Auto-expand Calls if we're on a calls sub-page
+    if (location.pathname.startsWith('/calls')) {
+      return ['/calls'];
+    }
+    return [];
+  });
+
+  const toggleExpanded = (path: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
+    );
+  };
+
+  const isItemActive = (item: NavItem): boolean => {
+    if (item.path === location.pathname) return true;
+    if (item.subItems) {
+      return item.subItems.some((subItem) => subItem.path === location.pathname);
+    }
+    return false;
+  };
+
+  const isSubItemActive = (subItem: NavItem): boolean => {
+    return subItem.path === location.pathname;
+  };
 
   return (
     <aside 
@@ -74,26 +138,87 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
       </div>
       
       <nav className="p-4" aria-label="Main navigation">
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isItemActive(item);
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const isExpanded = expandedItems.includes(item.path);
+
             return (
               <li key={item.path}>
-                <Link
-                  to={item.path}
-                  onClick={onClose}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
-                  }`}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <span className={`flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
-                    {item.icon}
-                  </span>
-                  <span className="text-base">{item.label}</span>
-                </Link>
+                <div>
+                  {hasSubItems ? (
+                    <button
+                      onClick={() => toggleExpanded(item.path)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
+                        isActive
+                          ? 'bg-primary-50 text-primary-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className={`flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
+                          {item.icon}
+                        </span>
+                        <span className="text-base">{item.label}</span>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''} ${
+                          isActive ? 'text-primary-600' : 'text-gray-400'
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      onClick={onClose}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
+                        isActive
+                          ? 'bg-primary-50 text-primary-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                      }`}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      <span className={`flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
+                        {item.icon}
+                      </span>
+                      <span className="text-base">{item.label}</span>
+                    </Link>
+                  )}
+                </div>
+
+                {/* Sub-items */}
+                {hasSubItems && isExpanded && item.subItems && (
+                  <ul className="mt-1 ml-4 space-y-1 border-l-2 border-gray-200 pl-2">
+                    {item.subItems.map((subItem) => {
+                      const isSubActive = isSubItemActive(subItem);
+                      return (
+                        <li key={subItem.path}>
+                          <Link
+                            to={subItem.path}
+                            onClick={onClose}
+                            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors touch-manipulation min-h-[40px] text-sm ${
+                              isSubActive
+                                ? 'bg-primary-50 text-primary-700 font-medium'
+                                : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
+                            }`}
+                            aria-current={isSubActive ? 'page' : undefined}
+                          >
+                            <span className={`flex-shrink-0 ${isSubActive ? 'text-primary-600' : 'text-gray-400'}`}>
+                              {subItem.icon}
+                            </span>
+                            <span>{subItem.label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}
