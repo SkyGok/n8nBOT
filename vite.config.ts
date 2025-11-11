@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: '/n8nBOT/', // GitHub Pages base path
+export default defineConfig(({ mode }) => ({
+  // Only use base path for production builds (GitHub Pages)
+  // In development, use root path for easier local development
+  base: mode === 'production' ? '/n8nBOT/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -16,6 +18,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
   },
-})
+}))
 
 

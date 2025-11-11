@@ -1,14 +1,16 @@
 /**
  * Sidebar component for navigation
  * Provides navigation links and menu items
- * Responsive: drawer on mobile, sidebar on desktop
+ * Toggleable on all screen sizes
  */
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
+  isOpen: boolean;
   onClose?: () => void;
+  onToggle?: () => void;
 }
 
 interface NavItem {
@@ -48,20 +50,20 @@ const navItems: NavItem[] = [
   },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
   const location = useLocation();
 
   return (
     <aside 
-      className="bg-white border-r border-gray-200 w-64 h-full lg:min-h-screen shadow-lg lg:shadow-none" 
+      className="bg-white border-r border-gray-200 w-64 h-full lg:min-h-screen shadow-lg lg:shadow-none"
       role="complementary" 
       aria-label="Sidebar navigation"
     >
-      {/* Mobile close button */}
-      <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+      {/* Header with close/toggle button */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
         <button
-          onClick={onClose}
+          onClick={onClose || onToggle}
           className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation"
           aria-label="Close menu"
         >
@@ -87,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <span className={isActive ? 'text-primary-600' : 'text-gray-500'}>
+                  <span className={`flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
                     {item.icon}
                   </span>
                   <span className="text-base">{item.label}</span>
