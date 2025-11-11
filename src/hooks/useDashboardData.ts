@@ -5,7 +5,7 @@
 
 import { useEffect } from 'react';
 import { useDashboardStore } from '@/store/useDashboardStore';
-import { SummaryStats, TimeSeriesResponse, EventsResponse, ApiResponse } from '@/types/api';
+import { SummaryStats, TimeSeriesResponse, EventsResponse, ApiResponse, EngagementMetrics } from '@/types/api';
 
 // API base URL - adjust this to match your n8n webhook/API endpoint
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -150,5 +150,42 @@ export function useEvents(page: number = 1, pageSize: number = 50, filters?: { s
   }, [page, pageSize, filters?.status, filters?.direction, setEventsData, setLoadingEvents, setEventsError]);
 
   return { eventsData, isLoadingEvents, eventsError };
+}
+
+/**
+ * Hook to fetch engagement metrics
+ */
+export function useEngagementMetrics() {
+  const {
+    engagementMetrics,
+    isLoadingEngagement,
+    engagementError,
+    setEngagementMetrics,
+    setLoadingEngagement,
+    setEngagementError,
+  } = useDashboardStore();
+
+  useEffect(() => {
+    const fetchEngagement = async () => {
+      setLoadingEngagement(true);
+      setEngagementError(null);
+      
+      const response = await fetchApi<EngagementMetrics>('/metrics/engagement');
+      
+      if (response.success) {
+        setEngagementMetrics(response.data);
+      } else {
+        setEngagementError(response.error.message);
+      }
+      
+      setLoadingEngagement(false);
+    };
+
+    if (!engagementMetrics && !isLoadingEngagement) {
+      fetchEngagement();
+    }
+  }, [engagementMetrics, isLoadingEngagement, setEngagementMetrics, setLoadingEngagement, setEngagementError]);
+
+  return { engagementMetrics, isLoadingEngagement, engagementError };
 }
 

@@ -62,4 +62,13 @@ export type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: ApiError };
 
+// Engagement metrics for dashboard
+export interface EngagementMetrics {
+  appointmentsViaAgent: number;
+  whatsappConversations: number;
+  whatsappAppointments: number;
+  notesCountToday: number;
+  lastUpdated: string; // ISO 8601 timestamp
+}
+
 

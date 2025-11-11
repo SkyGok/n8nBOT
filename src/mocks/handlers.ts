@@ -5,6 +5,7 @@
 
 import { http, HttpResponse } from 'msw';
 import { mockSummaryStats, generateMockTimeSeries, mockEventsResponse } from './mockData';
+import { formatISO } from 'date-fns';
 
 // Base API URL - adjust this to match your n8n webhook/API endpoint
 const API_BASE = '/api';
@@ -66,6 +67,31 @@ export const handlers = [
         pageSize,
         total: filteredEvents.length,
         hasMore: end < filteredEvents.length,
+      },
+    });
+  }),
+
+  // GET /api/metrics/engagement - Engagement metrics
+  http.get(`${API_BASE}/metrics/engagement`, () => {
+    // Simple derivation for mock purposes
+    const today = new Date();
+    const last24h = mockEventsResponse.events.filter(
+      (e) => new Date(e.timestamp).getTime() >= Date.now() - 24 * 60 * 60 * 1000
+    );
+    const whatsappConversations = Math.floor(40 + Math.random() * 30); // Mocked
+    const whatsappAppointments = Math.floor(10 + Math.random() * 15); // Mocked
+    const appointmentsViaAgent = Math.floor(20 + Math.random() * 25); // Mocked
+    const notesCountToday =
+      last24h.reduce((acc, e) => (e.notes ? acc + 1 : acc), 0) + Math.floor(Math.random() * 10);
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        appointmentsViaAgent,
+        whatsappConversations,
+        whatsappAppointments,
+        notesCountToday,
+        lastUpdated: formatISO(today),
       },
     });
   }),
