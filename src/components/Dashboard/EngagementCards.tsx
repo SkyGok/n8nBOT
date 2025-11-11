@@ -31,11 +31,11 @@ const Card: React.FC<CardProps> = ({ title, value, icon, isLoading }) => {
   return (
     <div className="card">
       <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{title}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900">{value}</p>
         </div>
-        <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600 flex-shrink-0 ml-2">
           {icon}
         </div>
       </div>
@@ -64,7 +64,7 @@ export const EngagementCards: React.FC = () => {
   return (
     <div className="space-y-2">
       {updated && <p className="text-xs text-gray-500 px-1">{updated}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card
           title="Appointments via AI Agent"
           value={engagementMetrics?.appointmentsViaAgent ?? 0}

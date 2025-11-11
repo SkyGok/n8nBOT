@@ -62,30 +62,32 @@ export const TimeseriesChart: React.FC = () => {
           {timeSeriesData.period === 'hour' ? '7 days' : '30 days'}
         </p>
       </div>
-      <div className="h-64">
+      <div className="h-64 sm:h-80 lg:h-96">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="time"
               stroke="#6b7280"
-              fontSize={12}
+              fontSize={10}
               tick={{ fill: '#6b7280' }}
               angle={-45}
               textAnchor="end"
-              height={80}
+              height={60}
+              interval="preserveStartEnd"
             />
-            <YAxis stroke="#6b7280" fontSize={12} tick={{ fill: '#6b7280' }} />
+            <YAxis stroke="#6b7280" fontSize={10} tick={{ fill: '#6b7280' }} width={40} />
             <Tooltip
               contentStyle={{
                 backgroundColor: '#fff',
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
+                fontSize: '12px',
               }}
               labelFormatter={(label) => `Time: ${label}`}
               formatter={(value: number) => [value, 'Calls']}
             />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
             <Line
               type="monotone"
               dataKey="value"

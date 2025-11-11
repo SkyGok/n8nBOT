@@ -1,10 +1,15 @@
 /**
  * Sidebar component for navigation
  * Provides navigation links and menu items
+ * Responsive: drawer on mobile, sidebar on desktop
  */
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+
+interface SidebarProps {
+  onClose?: () => void;
+}
 
 interface NavItem {
   label: string;
@@ -43,11 +48,29 @@ const navItems: NavItem[] = [
   },
 ];
 
-export const Sidebar: React.FC = () => {
+export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const location = useLocation();
 
   return (
-    <aside className="bg-white border-r border-gray-200 w-64 min-h-screen" role="complementary" aria-label="Sidebar navigation">
+    <aside 
+      className="bg-white border-r border-gray-200 w-64 h-full lg:min-h-screen shadow-lg lg:shadow-none" 
+      role="complementary" 
+      aria-label="Sidebar navigation"
+    >
+      {/* Mobile close button */}
+      <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+        <button
+          onClick={onClose}
+          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation"
+          aria-label="Close menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
       <nav className="p-4" aria-label="Main navigation">
         <ul className="space-y-2">
           {navItems.map((item) => {
@@ -56,17 +79,18 @@ export const Sidebar: React.FC = () => {
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                  onClick={onClose}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
                     isActive
                       ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <span className={isActive ? 'text-primary-600' : 'text-gray-500'}>
                     {item.icon}
                   </span>
-                  <span>{item.label}</span>
+                  <span className="text-base">{item.label}</span>
                 </Link>
               </li>
             );

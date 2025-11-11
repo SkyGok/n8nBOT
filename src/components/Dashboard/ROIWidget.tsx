@@ -33,14 +33,14 @@ export const ROIWidget: React.FC = () => {
         </div>
       </div>
 
-      <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="ROI calculator form">
+      <form className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="ROI calculator form">
         <label className="flex flex-col text-sm text-gray-700">
           Ad Spend ($)
           <input
             type="number"
             value={adSpend}
             onChange={(e) => setAdSpend(Number(e.target.value))}
-            className="mt-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="mt-1 border border-gray-300 rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation min-h-[44px] text-base"
             min={0}
             aria-label="Ad spend input"
           />
@@ -51,7 +51,7 @@ export const ROIWidget: React.FC = () => {
             type="number"
             value={appointments}
             onChange={(e) => setAppointments(Number(e.target.value))}
-            className="mt-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="mt-1 border border-gray-300 rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation min-h-[44px] text-base"
             min={0}
             aria-label="Appointments input"
           />
@@ -63,7 +63,7 @@ export const ROIWidget: React.FC = () => {
             step="0.05"
             value={showRate}
             onChange={(e) => setShowRate(Number(e.target.value))}
-            className="mt-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="mt-1 border border-gray-300 rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation min-h-[44px] text-base"
             min={0}
             max={1}
             aria-label="Show to sale rate input"
@@ -76,14 +76,14 @@ export const ROIWidget: React.FC = () => {
             type="number"
             value={avgRevenue}
             onChange={(e) => setAvgRevenue(Number(e.target.value))}
-            className="mt-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="mt-1 border border-gray-300 rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation min-h-[44px] text-base"
             min={0}
             aria-label="Average revenue per sale input"
           />
         </label>
       </form>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-sm text-gray-500">Estimated Sales</p>
           <p className="text-2xl font-semibold text-gray-900">{estimatedSales}</p>
