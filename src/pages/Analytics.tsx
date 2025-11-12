@@ -6,14 +6,13 @@
 import React from 'react';
 import { CallSummaryChart } from '@/components/CallSummaryChart';
 import { TimeseriesChart } from '@/components/Dashboard/TimeseriesChart';
-import { useSummaryStats } from '@/hooks/useDashboardData';
+import { useSummaryStats, useTotalCustomers } from '@/hooks/useDashboardData';
 
 export const Analytics: React.FC = () => {
   const { summaryStats } = useSummaryStats();
+  const { totalCustomers } = useTotalCustomers();
 
   // Calculate metrics for CallSummaryChart
-  // Using mock data structure - adjust these based on your actual data source
-  const totalCustomers = 1500; // This would come from your API
   const calledCustomers = summaryStats?.totalCalls || 0;
   const successfulCalls = summaryStats?.answeredCalls || 0;
 

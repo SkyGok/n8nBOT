@@ -8,9 +8,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-// Initialize MSW in development
+// Initialize MSW in development (only if Supabase is not configured)
 async function enableMocking() {
-  if (import.meta.env.MODE !== 'development') {
+  // Skip MSW if Supabase is configured
+  const useSupabase = import.meta.env.VITE_USE_SUPABASE === 'true' || 
+                       (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+  
+  if (import.meta.env.MODE !== 'development' || useSupabase) {
     return;
   }
 

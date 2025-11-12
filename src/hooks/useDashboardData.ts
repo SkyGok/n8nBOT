@@ -1,17 +1,27 @@
 /**
  * Custom hooks for fetching dashboard data
- * Handles API calls, loading states, and error handling
+ * Handles Supabase database queries, loading states, and error handling
  */
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useDashboardStore } from '@/store/useDashboardStore';
-import { SummaryStats, TimeSeriesResponse, EventsResponse, ApiResponse, EngagementMetrics } from '@/types/api';
+import { SummaryStats, TimeSeriesResponse, EventsResponse, EngagementMetrics } from '@/types/api';
+import {
+  fetchSummaryStats,
+  fetchTimeSeriesData,
+  fetchEvents,
+  fetchEngagementMetrics,
+  getTotalCustomers,
+} from '@/services/database';
 
-// API base URL - adjust this to match your n8n webhook/API endpoint
+// Check if we should use Supabase or mock data
+const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true' || 
+                     (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+// Fallback to mock API if Supabase is not configured
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Generic fetch function with error handling
-async function fetchApi<T>(endpoint: string): Promise<ApiResponse<T>> {
+async function fetchApi<T>(endpoint: string): Promise<{ success: true; data: T } | { success: false; error: { message: string } }> {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`);
     
@@ -49,15 +59,24 @@ export function useSummaryStats() {
       setLoadingSummary(true);
       setSummaryError(null);
       
-      const response = await fetchApi<SummaryStats>('/summary');
-      
-      if (response.success) {
-        setSummaryStats(response.data);
-      } else {
-        setSummaryError(response.error.message);
+      try {
+        if (USE_SUPABASE) {
+          const data = await fetchSummaryStats();
+          setSummaryStats(data);
+        } else {
+          // Fallback to mock API
+          const response = await fetchApi<SummaryStats>('/summary');
+          if (response.success) {
+            setSummaryStats(response.data);
+          } else {
+            setSummaryError(response.error.message);
+          }
+        }
+      } catch (error) {
+        setSummaryError(error instanceof Error ? error.message : 'Failed to fetch summary statistics');
+      } finally {
+        setLoadingSummary(false);
       }
-      
-      setLoadingSummary(false);
     };
 
     if (!summaryStats && !isLoadingSummary) {
@@ -86,17 +105,26 @@ export function useTimeSeriesData(metric: 'calls' | 'duration' | 'answered_rate'
       setLoadingTimeSeries(true);
       setTimeSeriesError(null);
       
-      const response = await fetchApi<TimeSeriesResponse>(
-        `/timeseries?metric=${metric}&period=${period}`
-      );
-      
-      if (response.success) {
-        setTimeSeriesData(response.data);
-      } else {
-        setTimeSeriesError(response.error.message);
+      try {
+        if (USE_SUPABASE) {
+          const data = await fetchTimeSeriesData(metric, period);
+          setTimeSeriesData(data);
+        } else {
+          // Fallback to mock API
+          const response = await fetchApi<TimeSeriesResponse>(
+            `/timeseries?metric=${metric}&period=${period}`
+          );
+          if (response.success) {
+            setTimeSeriesData(response.data);
+          } else {
+            setTimeSeriesError(response.error.message);
+          }
+        }
+      } catch (error) {
+        setTimeSeriesError(error instanceof Error ? error.message : 'Failed to fetch time series data');
+      } finally {
+        setLoadingTimeSeries(false);
       }
-      
-      setLoadingTimeSeries(false);
     };
 
     fetchTimeSeries();
@@ -119,34 +147,43 @@ export function useEvents(page: number = 1, pageSize: number = 50, filters?: { s
   } = useDashboardStore();
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchEventsData = async () => {
       setLoadingEvents(true);
       setEventsError(null);
       
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-      });
-      
-      if (filters?.status) {
-        params.append('status', filters.status);
+      try {
+        if (USE_SUPABASE) {
+          const data = await fetchEvents(page, pageSize, filters);
+          setEventsData(data);
+        } else {
+          // Fallback to mock API
+          const params = new URLSearchParams({
+            page: page.toString(),
+            pageSize: pageSize.toString(),
+          });
+          
+          if (filters?.status) {
+            params.append('status', filters.status);
+          }
+          if (filters?.direction) {
+            params.append('direction', filters.direction);
+          }
+          
+          const response = await fetchApi<EventsResponse>(`/events?${params.toString()}`);
+          if (response.success) {
+            setEventsData(response.data);
+          } else {
+            setEventsError(response.error.message);
+          }
+        }
+      } catch (error) {
+        setEventsError(error instanceof Error ? error.message : 'Failed to fetch events');
+      } finally {
+        setLoadingEvents(false);
       }
-      if (filters?.direction) {
-        params.append('direction', filters.direction);
-      }
-      
-      const response = await fetchApi<EventsResponse>(`/events?${params.toString()}`);
-      
-      if (response.success) {
-        setEventsData(response.data);
-      } else {
-        setEventsError(response.error.message);
-      }
-      
-      setLoadingEvents(false);
     };
 
-    fetchEvents();
+    fetchEventsData();
   }, [page, pageSize, filters?.status, filters?.direction, setEventsData, setLoadingEvents, setEventsError]);
 
   return { eventsData, isLoadingEvents, eventsError };
@@ -170,15 +207,24 @@ export function useEngagementMetrics() {
       setLoadingEngagement(true);
       setEngagementError(null);
       
-      const response = await fetchApi<EngagementMetrics>('/metrics/engagement');
-      
-      if (response.success) {
-        setEngagementMetrics(response.data);
-      } else {
-        setEngagementError(response.error.message);
+      try {
+        if (USE_SUPABASE) {
+          const data = await fetchEngagementMetrics();
+          setEngagementMetrics(data);
+        } else {
+          // Fallback to mock API
+          const response = await fetchApi<EngagementMetrics>('/metrics/engagement');
+          if (response.success) {
+            setEngagementMetrics(response.data);
+          } else {
+            setEngagementError(response.error.message);
+          }
+        }
+      } catch (error) {
+        setEngagementError(error instanceof Error ? error.message : 'Failed to fetch engagement metrics');
+      } finally {
+        setLoadingEngagement(false);
       }
-      
-      setLoadingEngagement(false);
     };
 
     if (!engagementMetrics && !isLoadingEngagement) {
@@ -187,5 +233,33 @@ export function useEngagementMetrics() {
   }, [engagementMetrics, isLoadingEngagement, setEngagementMetrics, setLoadingEngagement, setEngagementError]);
 
   return { engagementMetrics, isLoadingEngagement, engagementError };
+}
+
+/**
+ * Hook to get total customers count
+ */
+export function useTotalCustomers() {
+  const [totalCustomers, setTotalCustomers] = React.useState<number>(1500);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  useEffect(() => {
+    const fetchTotal = async () => {
+      if (!USE_SUPABASE) return;
+      
+      setIsLoading(true);
+      try {
+        const count = await getTotalCustomers();
+        setTotalCustomers(count);
+      } catch (error) {
+        console.error('Failed to fetch total customers:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTotal();
+  }, []);
+
+  return { totalCustomers, isLoading };
 }
 

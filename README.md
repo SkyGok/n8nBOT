@@ -7,6 +7,7 @@ A React + TypeScript + Vite frontend dashboard for an n8n AI agent phone analyti
 ### Prerequisites
 
 - Node.js 18+ and npm/yarn/pnpm
+- Supabase account (free tier works)
 
 ### Installation & Setup
 
@@ -15,18 +16,33 @@ A React + TypeScript + Vite frontend dashboard for an n8n AI agent phone analyti
    npm install
    ```
 
-2. **Initialize MSW (Mock Service Worker):**
-   ```bash
-   npx msw init public/ --save
+2. **Set up Supabase:**
+   - Create a Supabase project at https://app.supabase.com
+   - Create database tables using your SQL schema
+   - Get your API credentials (Project URL and anon key)
+
+3. **Configure environment variables:**
+   Create a `.env` file in the project root:
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key_here
+   VITE_USE_SUPABASE=true
    ```
 
-3. **Start development server:**
+4. **Start development server:**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser:**
+5. **Open your browser:**
    Navigate to `http://localhost:5173` (or the port shown in terminal)
+
+### 📖 Full Setup Guide
+
+For detailed step-by-step instructions, see:
+- **[QUICK_START.md](./QUICK_START.md)** - Complete setup and deployment guide
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Detailed deployment instructions
+- **[DATABASE_REQUIREMENTS.md](./DATABASE_REQUIREMENTS.md)** - Database schema and data requirements
 
 ### Build for Production
 
@@ -100,11 +116,21 @@ n8nBOT/
 └── README.md
 ```
 
-## 🔌 API Integration Guide
+## 🔌 Data Integration
 
-### Current Setup (Mock Data)
+### Supabase Integration (Recommended)
 
-The application currently uses MSW (Mock Service Worker) to intercept API requests and return mock data. This allows development without a backend.
+The application is configured to use Supabase as the primary data source. It automatically falls back to mock data if Supabase is not configured.
+
+**Setup:**
+1. Create a Supabase project
+2. Run your SQL schema to create tables
+3. Set environment variables (see Quick Start above)
+4. The app will automatically connect to Supabase
+
+### Mock Data (Fallback)
+
+If Supabase is not configured, the application uses MSW (Mock Service Worker) to intercept API requests and return mock data. This allows development without a backend.
 
 ### Integrating Real n8n Endpoints
 
