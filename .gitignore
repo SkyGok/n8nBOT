@@ -32,4 +32,7 @@ coverage
 .env.local
 .env.production
 
+# Documentation files (ignore all .md except README.md)
+*.md
+!README.md
 
