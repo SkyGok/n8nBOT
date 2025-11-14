@@ -32,6 +32,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify environment variables
+        run: |
+          echo "Checking environment variables..."
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "❌ ERROR: VITE_SUPABASE_URL is not set!"
+            exit 1
+          fi
+          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "❌ ERROR: VITE_SUPABASE_ANON_KEY is not set!"
+            exit 1
+          fi
+          echo "✅ VITE_SUPABASE_URL is set (length: ${#VITE_SUPABASE_URL} chars)"
+          echo "✅ VITE_SUPABASE_ANON_KEY is set (length: ${#VITE_SUPABASE_ANON_KEY} chars)"
+          echo "✅ VITE_USE_SUPABASE: ${VITE_USE_SUPABASE:-true}"
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_USE_SUPABASE: ${{ secrets.VITE_USE_SUPABASE || 'true' }}
+
       - name: Build
         run: npm run build
         env:
@@ -41,6 +60,21 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
+      - name: Verify build output
+        run: |
+          echo "Checking build output..."
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ ERROR: dist/index.html not found!"
+            exit 1
+          fi
+          # Check if Supabase URL is in the built JS (without exposing the actual URL)
+          if grep -q "placeholder.supabase.co" dist/assets/*.js 2>/dev/null; then
+            echo "⚠️  WARNING: Placeholder Supabase URL found in build - environment variables may not be set correctly!"
+          else
+            echo "✅ Build output looks good - Supabase URL appears to be configured"
+          fi
+          echo "✅ Build verification complete"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
