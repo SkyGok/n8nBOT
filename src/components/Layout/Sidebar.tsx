@@ -47,19 +47,19 @@ const navItems: NavItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H7a5 5 0 01-5-5V7a5 5 0 015-5h10a5 5 0 015 5v4a5 5 0 01-5 5h-3l-4 4z" />
       </svg>
     ),
-  },
-  {
-    label: 'Calls',
-    path: '/calls',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-      </svg>
-    ),
     subItems: [
       {
-        label: 'Inbound Call',
-        path: '/calls/inbound',
+        label: 'Messages',
+        path: '/whatsapp',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        ),
+      },
+      {
+        label: 'Inbound Calls',
+        path: '/whatsapp/inbound',
         icon: (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -67,8 +67,8 @@ const navItems: NavItem[] = [
         ),
       },
       {
-        label: 'Outbound Call',
-        path: '/calls/outbound',
+        label: 'Outbound Calls',
+        path: '/whatsapp/outbound',
         icon: (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -101,9 +101,9 @@ const navItems: NavItem[] = [
 export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
-    // Auto-expand Calls if we're on a calls sub-page
-    if (location.pathname.startsWith('/calls')) {
-      return ['/calls'];
+    // Auto-expand WhatsApp if we're on a whatsapp sub-page
+    if (location.pathname.startsWith('/whatsapp')) {
+      return ['/whatsapp'];
     }
     return [];
   });
