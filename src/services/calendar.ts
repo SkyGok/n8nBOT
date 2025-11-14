@@ -127,6 +127,28 @@ export async function fetchCalendarEvents(
 }
 
 /**
+ * Get current user ID from Supabase auth
+ */
+async function getCurrentUserId(): Promise<string | null> {
+  if (!isSupabaseAvailable()) return null;
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || null;
+  } catch (error) {
+    console.error('[Calendar Service] Error getting user:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate a unique google_event_id for manually created events
+ */
+function generateGoogleEventId(): string {
+  return `manual-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/**
  * Create a new calendar event
  * Priority: Supabase > n8n webhook > localStorage
  */
@@ -136,23 +158,47 @@ export async function createCalendarEvent(
   // Try Supabase first
   if (isSupabaseAvailable()) {
     try {
+      // Get current user ID
+      const userId = await getCurrentUserId();
+      
+      // Generate a unique google_event_id for manually created events
+      const googleEventId = generateGoogleEventId();
+      
+      // Ensure dates are ISO strings
+      const startTime = typeof event.start === 'string' 
+        ? event.start 
+        : new Date(event.start).toISOString();
+      const endTime = typeof event.end === 'string' 
+        ? event.end 
+        : new Date(event.end).toISOString();
+
+      const insertData: any = {
+        google_event_id: googleEventId,
+        title: event.title,
+        description: event.description || null,
+        location: event.location || null,
+        start_time: startTime,
+        end_time: endTime,
+        all_day: event.allDay || false,
+        status: 'confirmed',
+        metadata: event.metadata || {},
+      };
+
+      // Only include user_id if we have it (for RLS policies)
+      if (userId) {
+        insertData.user_id = userId;
+      }
+
       const { data, error } = await supabase
         .from('calendar_events')
-        .insert({
-          title: event.title,
-          description: event.description || null,
-          location: event.location || null,
-          start_time: event.start,
-          end_time: event.end,
-          all_day: event.allDay || false,
-          color: null,
-          metadata: event.metadata || {},
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) {
-        throw error;
+        console.error('[Calendar Service] Supabase insert error:', error);
+        // Show more detailed error
+        throw new Error(`Failed to create event: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` Hint: ${error.hint}` : ''}`);
       }
 
       if (data) {
@@ -164,7 +210,7 @@ export async function createCalendarEvent(
           description: data.description || undefined,
           location: data.location || undefined,
           allDay: data.all_day,
-          color: data.color || undefined,
+          color: data.color_id || undefined,
           metadata: data.metadata || {},
         };
 
@@ -175,7 +221,8 @@ export async function createCalendarEvent(
       }
     } catch (error) {
       console.error('[Calendar Service] Error creating in Supabase:', error);
-      // Fall through to next method
+      // Re-throw error so it can be handled by the caller
+      throw error;
     }
   }
 
@@ -246,10 +293,19 @@ export async function updateCalendarEvent(
       if (updates.title !== undefined) updateData.title = updates.title;
       if (updates.description !== undefined) updateData.description = updates.description || null;
       if (updates.location !== undefined) updateData.location = updates.location || null;
-      if (updates.start !== undefined) updateData.start_time = updates.start;
-      if (updates.end !== undefined) updateData.end_time = updates.end;
+      if (updates.start !== undefined) {
+        updateData.start_time = typeof updates.start === 'string' 
+          ? updates.start 
+          : new Date(updates.start).toISOString();
+      }
+      if (updates.end !== undefined) {
+        updateData.end_time = typeof updates.end === 'string' 
+          ? updates.end 
+          : new Date(updates.end).toISOString();
+      }
       if (updates.allDay !== undefined) updateData.all_day = updates.allDay;
       if (updates.metadata !== undefined) updateData.metadata = updates.metadata || {};
+      updateData.updated_at = new Date().toISOString();
 
       const { data, error } = await supabase
         .from('calendar_events')
@@ -259,7 +315,8 @@ export async function updateCalendarEvent(
         .single();
 
       if (error) {
-        throw error;
+        console.error('[Calendar Service] Supabase update error:', error);
+        throw new Error(`Failed to update event: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` Hint: ${error.hint}` : ''}`);
       }
 
       if (data) {
@@ -271,7 +328,7 @@ export async function updateCalendarEvent(
           description: data.description || undefined,
           location: data.location || undefined,
           allDay: data.all_day,
-          color: data.color || undefined,
+          color: data.color_id || undefined,
           metadata: data.metadata || {},
         };
 
@@ -282,7 +339,8 @@ export async function updateCalendarEvent(
       }
     } catch (error) {
       console.error('[Calendar Service] Error updating in Supabase:', error);
-      // Fall through to next method
+      // Re-throw error so it can be handled by the caller
+      throw error;
     }
   }
 
@@ -528,6 +586,9 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
   if (!isSupabaseAvailable()) return;
 
   try {
+    const userId = await getCurrentUserId();
+    const googleEventId = event.metadata?.google_event_id as string || generateGoogleEventId();
+    
     // Check if event exists
     const { data: existing } = await supabase
       .from('calendar_events')
@@ -535,36 +596,35 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
       .eq('id', event.id)
       .single();
 
+    const eventData: any = {
+      title: event.title,
+      description: event.description || null,
+      location: event.location || null,
+      start_time: event.start.toISOString(),
+      end_time: event.end.toISOString(),
+      all_day: event.allDay || false,
+      color_id: event.color || null,
+      metadata: event.metadata || {},
+    };
+
+    if (userId) {
+      eventData.user_id = userId;
+    }
+
     if (existing) {
       // Update existing event
+      eventData.updated_at = new Date().toISOString();
       await supabase
         .from('calendar_events')
-        .update({
-          title: event.title,
-          description: event.description || null,
-          location: event.location || null,
-          start_time: event.start.toISOString(),
-          end_time: event.end.toISOString(),
-          all_day: event.allDay || false,
-          color: event.color || null,
-          metadata: event.metadata || {},
-        })
+        .update(eventData)
         .eq('id', event.id);
     } else {
       // Insert new event
+      eventData.id = event.id;
+      eventData.google_event_id = googleEventId;
       await supabase
         .from('calendar_events')
-        .insert({
-          id: event.id,
-          title: event.title,
-          description: event.description || null,
-          location: event.location || null,
-          start_time: event.start.toISOString(),
-          end_time: event.end.toISOString(),
-          all_day: event.allDay || false,
-          color: event.color || null,
-          metadata: event.metadata || {},
-        });
+        .insert(eventData);
     }
   } catch (error) {
     console.error('[Calendar Service] Error syncing event to Supabase:', error);
@@ -579,16 +639,20 @@ async function syncEventsToSupabase(events: CalendarEvent[]): Promise<void> {
   if (!isSupabaseAvailable() || events.length === 0) return;
 
   try {
+    const userId = await getCurrentUserId();
+    
     // Upsert all events
     const eventsToUpsert = events.map(event => ({
       id: event.id,
+      google_event_id: event.metadata?.google_event_id as string || generateGoogleEventId(),
+      user_id: userId,
       title: event.title,
       description: event.description || null,
       location: event.location || null,
       start_time: event.start.toISOString(),
       end_time: event.end.toISOString(),
       all_day: event.allDay || false,
-      color: event.color || null,
+      color_id: event.color || null,
       metadata: event.metadata || {},
     }));
 

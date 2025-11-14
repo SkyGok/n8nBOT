@@ -288,14 +288,20 @@ export const CalendarPage: React.FC = () => {
   }, []);
 
   const handleSaveEvent = async (eventData: CreateCalendarEventInput) => {
-    if (selectedEvent) {
-      // Update existing event
-      await updateCalendarEvent(selectedEvent.id, eventData);
-    } else {
-      // Create new event
-      await createCalendarEvent(eventData);
+    try {
+      if (selectedEvent) {
+        // Update existing event
+        await updateCalendarEvent(selectedEvent.id, eventData);
+      } else {
+        // Create new event
+        await createCalendarEvent(eventData);
+      }
+      await loadEvents();
+    } catch (error) {
+      console.error('Error saving event:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save event. Please check the browser console for details.';
+      alert(errorMessage);
     }
-    await loadEvents();
   };
 
   const handleDeleteEvent = async (eventId: string) => {
