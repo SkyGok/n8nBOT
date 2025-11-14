@@ -11,6 +11,8 @@ import { WhatsAppPage } from '@/pages/WhatsApp/WhatsAppPage';
 import { CallsPage } from '@/pages/Calls/CallsPage';
 import { InboundCall } from '@/pages/Calls/InboundCall';
 import { OutboundCall } from '@/pages/Calls/OutboundCall';
+import { CalendarPage } from '@/pages/Calendar/CalendarPage';
+import { SettingsPage } from '@/pages/Settings/SettingsPage';
 
 function App() {
   // Use basename for GitHub Pages deployment
@@ -26,7 +28,8 @@ function App() {
           <Route path="/calls" element={<CallsPage />} />
           <Route path="/calls/inbound" element={<InboundCall />} />
           <Route path="/calls/outbound" element={<OutboundCall />} />
-          <Route path="/settings" element={<div className="card"><h2 className="text-2xl font-bold">Settings</h2><p className="text-gray-600 mt-2">Settings page coming soon...</p></div>} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </MainLayout>
     </BrowserRouter>
