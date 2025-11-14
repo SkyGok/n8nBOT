@@ -10,6 +10,19 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Only throw error if Supabase is explicitly enabled but credentials are missing
 const useSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
+
+// Debug logging (only in development or if explicitly enabled)
+if (import.meta.env.DEV || import.meta.env.VITE_DEBUG === 'true') {
+  console.log('[Supabase Config]', {
+    hasUrl: !!supabaseUrl,
+    urlPrefix: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'missing',
+    hasKey: !!supabaseAnonKey,
+    keyPrefix: supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'missing',
+    useSupabase,
+    currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'server',
+  });
+}
+
 if (useSupabase && (!supabaseUrl || !supabaseAnonKey)) {
   console.warn('Supabase is enabled but credentials are missing. Falling back to mock data.');
 }
@@ -17,7 +30,13 @@ if (useSupabase && (!supabaseUrl || !supabaseAnonKey)) {
 // Create Supabase client with fallback to placeholder if not configured
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  }
 );
 
 // Database types matching your Supabase schema

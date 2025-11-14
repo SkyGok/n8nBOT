@@ -17,7 +17,14 @@ export async function fetchSummaryStats(): Promise<SummaryStats> {
     .select('status, duration_seconds, timestamp');
 
   if (error) {
-    throw new Error(`Failed to fetch calls: ${error.message}`);
+    // Enhanced error logging
+    console.error('[Supabase Error] Failed to fetch calls:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    throw new Error(`Failed to fetch calls: ${error.message}${error.hint ? ` (${error.hint})` : ''}`);
   }
 
   if (!calls || calls.length === 0) {
@@ -96,7 +103,14 @@ export async function fetchTimeSeriesData(
     .order('timestamp', { ascending: true });
 
   if (error) {
-    throw new Error(`Failed to fetch timeseries data: ${error.message}`);
+    // Enhanced error logging
+    console.error('[Supabase Error] Failed to fetch timeseries data:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    throw new Error(`Failed to fetch timeseries data: ${error.message}${error.hint ? ` (${error.hint})` : ''}`);
   }
 
   // If no data in timeseries table, calculate from calls table
