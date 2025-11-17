@@ -81,9 +81,10 @@ export function setCurrentLanguage(language: SupportedLanguage): void {
  *   t('settings.title') // Returns translated string
  *   t('settings.language', { lang: 'English' }) // With interpolation
  */
-export function t(key: string, params?: Record<string, string | number>): string {
+export function t(key: string, _params?: Record<string, string | number>): string {
   // Placeholder implementation
   // When i18n is implemented, this will return actual translations
+  // _params is prefixed with underscore to indicate it's intentionally unused
   return key;
 }
 

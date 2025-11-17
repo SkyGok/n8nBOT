@@ -82,11 +82,11 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children }) => {
   };
 
   const t = (key: string, params?: Record<string, string | number>): string => {
-    const translation = getNestedValue(translations[language], key);
+    let translation = getNestedValue(translations[language], key);
     
     // Replace parameters if provided
-    if (params) {
-      return Object.entries(params).reduce(
+    if (params && Object.keys(params).length > 0) {
+      translation = Object.entries(params).reduce(
         (text, [paramKey, paramValue]) => text.replace(`{{${paramKey}}}`, String(paramValue)),
         translation
       );
