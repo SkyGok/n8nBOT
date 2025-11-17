@@ -26,7 +26,7 @@ export const OutboundCall: React.FC = () => {
         <p className="text-sm text-gray-600 mb-4">
           View and filter all outbound call events and their details
         </p>
-        <EventsTable />
+        <EventsTable defaultDirectionFilter="outbound" />
       </div>
 
       {/* Placeholder for future outbound-specific content */}

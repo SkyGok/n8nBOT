@@ -7,6 +7,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { initializeTheme } from './utils/theme';
+
+// Initialize theme before rendering app
+initializeTheme();
 
 // Initialize MSW in development (only if Supabase is not configured)
 async function enableMocking() {

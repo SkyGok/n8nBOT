@@ -82,157 +82,151 @@ const EventModal: React.FC<EventModalProps> = ({ event, slotInfo, onClose, onSav
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Google Calendar-like Modal Header */}
+        <div className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-normal text-gray-900 dark:text-white">
               {event ? 'Edit Event' : 'Create Event'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label="Close"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
+        </div>
+
+        {/* Modal Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title *
-              </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Event title"
+                className="w-full px-0 py-2 text-lg font-normal border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="Add title"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Event description"
-              />
+            <div className="flex items-center space-x-3 py-2">
+              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-700 dark:text-gray-300"
+                  />
+                  {!allDay && (
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full px-2 py-1 text-sm border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-700 dark:text-gray-300 mt-1"
+                    />
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-700 dark:text-gray-300"
+                  />
+                  {!allDay && (
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full px-2 py-1 text-sm border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-700 dark:text-gray-300 mt-1"
+                    />
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Event location"
-              />
-            </div>
-
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3 py-2">
               <input
                 type="checkbox"
                 id="allDay"
                 checked={allDay}
                 onChange={(e) => setAllDay(e.target.checked)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
               />
-              <label htmlFor="allDay" className="ml-2 block text-sm text-gray-700">
-                All day event
+              <label htmlFor="allDay" className="text-sm text-gray-700 dark:text-gray-300">
+                All day
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              {!allDay && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              )}
+            <div className="flex items-center space-x-3 py-2">
+              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder="Add location"
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              {!allDay && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              )}
+            <div className="flex items-start space-x-3 py-2">
+              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="flex-1 px-2 py-1 text-sm border-0 border-b-2 border-transparent focus:border-primary-500 focus:outline-none bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none"
+                placeholder="Add description"
+              />
             </div>
+
           </div>
+        </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
-            {event && onDelete && (
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                disabled={isSaving}
-              >
-                Delete
-              </button>
-            )}
+        {/* Google Calendar-like Modal Footer */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          {event && onDelete && (
             <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              onClick={handleDelete}
+              className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
               disabled={isSaving}
             >
-              Cancel
+              Delete
             </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !title.trim()}
-              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
+          )}
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            disabled={isSaving}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving || !title.trim()}
+            className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       </div>
     </div>
@@ -327,48 +321,114 @@ export const CalendarPage: React.FC = () => {
     };
   };
 
+  const formatDate = (date: Date) => {
+    return moment(date).format('MMMM YYYY');
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const goToPrevious = () => {
+    if (currentView === 'month') {
+      setCurrentDate(moment(currentDate).subtract(1, 'month').toDate());
+    } else if (currentView === 'week') {
+      setCurrentDate(moment(currentDate).subtract(1, 'week').toDate());
+    } else {
+      setCurrentDate(moment(currentDate).subtract(1, 'day').toDate());
+    }
+  };
+
+  const goToNext = () => {
+    if (currentView === 'month') {
+      setCurrentDate(moment(currentDate).add(1, 'month').toDate());
+    } else if (currentView === 'week') {
+      setCurrentDate(moment(currentDate).add(1, 'week').toDate());
+    } else {
+      setCurrentDate(moment(currentDate).add(1, 'day').toDate());
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setCurrentView('month')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              currentView === 'month'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Month
-          </button>
-          <button
-            onClick={() => setCurrentView('week')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              currentView === 'week'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Week
-          </button>
-          <button
-            onClick={() => setCurrentView('day')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              currentView === 'day'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Day
-          </button>
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
+      {/* Google Calendar-like Header */}
+      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between mb-4">
+          {/* Left side - Title and Navigation */}
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-normal text-gray-900 dark:text-white">Calendar</h1>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToPrevious}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+                aria-label="Previous"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={goToNext}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+                aria-label="Next"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={goToToday}
+                className="px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 transition-colors"
+              >
+                Today
+              </button>
+            </div>
+            <div className="text-lg font-normal text-gray-700 dark:text-gray-300">
+              {formatDate(currentDate)}
+            </div>
+          </div>
+
+          {/* Right side - View Selector */}
+          <div className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <button
+              onClick={() => setCurrentView('day')}
+              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                currentView === 'day'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Day
+            </button>
+            <button
+              onClick={() => setCurrentView('week')}
+              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                currentView === 'week'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Week
+            </button>
+            <button
+              onClick={() => setCurrentView('month')}
+              className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                currentView === 'month'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Month
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4" style={{ height: '600px' }}>
+      {/* Calendar Container */}
+      <div className="flex-1 bg-white dark:bg-gray-800 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-gray-500">Loading calendar events...</div>
+            <div className="text-gray-500 dark:text-gray-400">Loading calendar events...</div>
           </div>
         ) : (
           <Calendar
@@ -386,6 +446,9 @@ export const CalendarPage: React.FC = () => {
             selectable
             eventPropGetter={eventStyleGetter}
             popup
+            components={{
+              toolbar: () => null, // Hide default toolbar, we have custom one
+            }}
           />
         )}
       </div>

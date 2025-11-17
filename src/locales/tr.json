@@ -1,0 +1,40 @@
+{
+  "common": {
+    "dashboard": "Tablo",
+    "analytics": "Analitik",
+    "overview": "Genel Bakış",
+    "roiAnalysis": "ROI Analizi",
+    "whatsapp": "WhatsApp",
+    "messages": "Mesajlar",
+    "inboundCalls": "Gelen Aramalar",
+    "outboundCalls": "Giden Aramalar",
+    "calendar": "Takvim",
+    "settings": "Ayarlar",
+    "menu": "Menü",
+    "notifications": "Bildirimler",
+    "appTitle": "n8n Telefon Analitik",
+    "appSubtitle": "AI Ajan Panosu"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "Uygulama tercihlerinizi özelleştirin",
+    "language": {
+      "title": "Dil",
+      "subtitle": "Tercih ettiğiniz dili seçin",
+      "current": "Mevcut dil"
+    },
+    "theme": {
+      "title": "Tema",
+      "subtitle": "Tercih ettiğiniz renk temasını seçin",
+      "current": "Mevcut tema",
+      "light": "Açık",
+      "dark": "Koyu",
+      "system": "Sistem"
+    },
+    "info": {
+      "title": "Ayarlar Bilgisi",
+      "message": "Tercihleriniz tarayıcınızda yerel olarak kaydedilir. Çerez kalıcılığı gelecekteki bir güncellemede eklenecektir."
+    }
+  }
+}
+

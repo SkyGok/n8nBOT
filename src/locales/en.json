@@ -1,0 +1,40 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "analytics": "Analytics",
+    "overview": "Overview",
+    "roiAnalysis": "ROI Analysis",
+    "whatsapp": "WhatsApp",
+    "messages": "Messages",
+    "inboundCalls": "Inbound Calls",
+    "outboundCalls": "Outbound Calls",
+    "calendar": "Calendar",
+    "settings": "Settings",
+    "menu": "Menu",
+    "notifications": "Notifications",
+    "appTitle": "n8n Phone Analytics",
+    "appSubtitle": "AI Agent Dashboard"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Customize your application preferences",
+    "language": {
+      "title": "Language",
+      "subtitle": "Choose your preferred language",
+      "current": "Current language"
+    },
+    "theme": {
+      "title": "Theme",
+      "subtitle": "Choose your preferred color theme",
+      "current": "Current theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "info": {
+      "title": "Settings Information",
+      "message": "Your preferences are saved locally in your browser. Cookie persistence will be added in a future update."
+    }
+  }
+}
+

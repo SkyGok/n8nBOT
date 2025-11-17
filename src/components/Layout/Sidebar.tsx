@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,9 +21,10 @@ interface NavItem {
   subItems?: NavItem[];
 }
 
-const navItems: NavItem[] = [
+// Navigation items will be translated dynamically
+const getNavItems = (t: (key: string) => string): NavItem[] => [
   {
-    label: 'Dashboard',
+    label: t('common.dashboard'),
     path: '/',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,16 +33,36 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    label: 'Analytics',
+    label: t('common.analytics'),
     path: '/analytics',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
+    subItems: [
+      {
+        label: t('common.overview'),
+        path: '/analytics',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        ),
+      },
+      {
+        label: t('common.roiAnalysis'),
+        path: '/analytics/roi',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+    ],
   },
   {
-    label: 'WhatsApp',
+    label: t('common.whatsapp'),
     path: '/whatsapp',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +71,7 @@ const navItems: NavItem[] = [
     ),
     subItems: [
       {
-        label: 'Messages',
+        label: t('common.messages'),
         path: '/whatsapp',
         icon: (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +80,7 @@ const navItems: NavItem[] = [
         ),
       },
       {
-        label: 'Inbound Calls',
+        label: t('common.inboundCalls'),
         path: '/whatsapp/inbound',
         icon: (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +89,7 @@ const navItems: NavItem[] = [
         ),
       },
       {
-        label: 'Outbound Calls',
+        label: t('common.outboundCalls'),
         path: '/whatsapp/outbound',
         icon: (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +100,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    label: 'Calendar',
+    label: t('common.calendar'),
     path: '/calendar',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +109,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    label: 'Settings',
+    label: t('common.settings'),
     path: '/settings',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,10 +122,15 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
   const location = useLocation();
+  const { t } = useI18n();
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     // Auto-expand WhatsApp if we're on a whatsapp sub-page
     if (location.pathname.startsWith('/whatsapp')) {
       return ['/whatsapp'];
+    }
+    // Auto-expand Analytics if we're on an analytics sub-page
+    if (location.pathname.startsWith('/analytics')) {
+      return ['/analytics'];
     }
     return [];
   });
@@ -128,16 +155,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
 
   return (
     <aside 
-      className="bg-white border-r border-gray-200 w-64 h-full lg:min-h-screen shadow-lg lg:shadow-none"
+      className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 w-64 h-full lg:min-h-screen shadow-lg lg:shadow-none transition-colors duration-200"
       role="complementary" 
       aria-label="Sidebar navigation"
     >
       {/* Header with close/toggle button */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('common.menu')}</h2>
         <button
           onClick={onClose || onToggle}
-          className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation"
+          className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation transition-colors"
           aria-label="Close menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
       
       <nav className="p-4" aria-label="Main navigation">
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {getNavItems(t).map((item) => {
             const isActive = isItemActive(item);
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isExpanded = expandedItems.includes(item.path);
@@ -161,19 +188,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
                       onClick={() => toggleExpanded(item.path)}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
                         isActive
-                          ? 'bg-primary-50 text-primary-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <span className={`flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
+                        <span className={`flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
                           {item.icon}
                         </span>
                         <span className="text-base">{item.label}</span>
                       </div>
                       <svg
                         className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''} ${
-                          isActive ? 'text-primary-600' : 'text-gray-400'
+                          isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'
                         }`}
                         fill="none"
                         stroke="currentColor"
@@ -188,12 +215,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
                       onClick={onClose}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
                         isActive
-                          ? 'bg-primary-50 text-primary-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
-                      <span className={`flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
+                      <span className={`flex-shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {item.icon}
                       </span>
                       <span className="text-base">{item.label}</span>
@@ -203,7 +230,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
 
                 {/* Sub-items */}
                 {hasSubItems && isExpanded && item.subItems && (
-                  <ul className="mt-1 ml-4 space-y-1 border-l-2 border-gray-200 pl-2">
+                  <ul className="mt-1 ml-4 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
                     {item.subItems.map((subItem) => {
                       const isSubActive = isSubItemActive(subItem);
                       return (
@@ -213,12 +240,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
                             onClick={onClose}
                             className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors touch-manipulation min-h-[40px] text-sm ${
                               isSubActive
-                                ? 'bg-primary-50 text-primary-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-50 active:bg-gray-100'
+                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600'
                             }`}
                             aria-current={isSubActive ? 'page' : undefined}
                           >
-                            <span className={`flex-shrink-0 ${isSubActive ? 'text-primary-600' : 'text-gray-400'}`}>
+                            <span className={`flex-shrink-0 ${isSubActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'}`}>
                               {subItem.icon}
                             </span>
                             <span>{subItem.label}</span>

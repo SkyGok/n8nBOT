@@ -70,3 +70,6 @@ FOR DELETE USING (true);
 -- You can verify it in the Table Editor in Supabase.
 -- ============================================
 
+
+
+

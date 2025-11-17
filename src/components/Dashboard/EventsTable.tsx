@@ -47,10 +47,18 @@ const DirectionBadge: React.FC<{ direction: PhoneEvent['direction'] }> = ({ dire
   );
 };
 
-export const EventsTable: React.FC = () => {
+interface EventsTableProps {
+  defaultDirectionFilter?: 'inbound' | 'outbound';
+  defaultStatusFilter?: string;
+}
+
+export const EventsTable: React.FC<EventsTableProps> = ({ 
+  defaultDirectionFilter,
+  defaultStatusFilter 
+}) => {
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [directionFilter, setDirectionFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>(defaultStatusFilter || '');
+  const [directionFilter, setDirectionFilter] = useState<string>(defaultDirectionFilter || '');
   const pageSize = 10;
 
   const { eventsData, isLoadingEvents, eventsError } = useEvents(page, pageSize, {

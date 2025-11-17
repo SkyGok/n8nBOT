@@ -26,7 +26,7 @@ export const InboundCall: React.FC = () => {
         <p className="text-sm text-gray-600 mb-4">
           View and filter all inbound call events and their details
         </p>
-        <EventsTable />
+        <EventsTable defaultDirectionFilter="inbound" />
       </div>
 
       {/* Placeholder for future inbound-specific content */}

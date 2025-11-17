@@ -49,6 +49,7 @@ export interface Database {
           phone_number: string;
           contact_name: string | null;
           direction: string;
+          call_type: 'inbound' | 'outbound';
           status: string;
           duration_seconds: number;
           timestamp: string;
@@ -63,6 +64,7 @@ export interface Database {
           phone_number: string;
           contact_name?: string | null;
           direction: string;
+          call_type: 'inbound' | 'outbound';
           status: string;
           duration_seconds: number;
           timestamp: string;
@@ -77,6 +79,7 @@ export interface Database {
           phone_number?: string;
           contact_name?: string | null;
           direction?: string;
+          call_type?: 'inbound' | 'outbound';
           status?: string;
           duration_seconds?: number;
           timestamp?: string;

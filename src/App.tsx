@@ -4,9 +4,12 @@
  */
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { I18nProvider } from '@/contexts/I18nContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { Dashboard } from '@/pages/Dashboard';
 import { Analytics } from '@/pages/Analytics';
+import { ROIAnalysis } from '@/pages/Analytics/ROIAnalysis';
 import { WhatsAppPage } from '@/pages/WhatsApp/WhatsAppPage';
 import { InboundCall } from '@/pages/Calls/InboundCall';
 import { OutboundCall } from '@/pages/Calls/OutboundCall';
@@ -18,19 +21,24 @@ function App() {
   const basename = import.meta.env.BASE_URL || '/';
   
   return (
-    <BrowserRouter basename={basename}>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/whatsapp" element={<WhatsAppPage />} />
-          <Route path="/whatsapp/inbound" element={<InboundCall />} />
-          <Route path="/whatsapp/outbound" element={<OutboundCall />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </MainLayout>
-    </BrowserRouter>
+    <ThemeProvider>
+      <I18nProvider>
+        <BrowserRouter basename={basename}>
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/analytics/roi" element={<ROIAnalysis />} />
+              <Route path="/whatsapp" element={<WhatsAppPage />} />
+              <Route path="/whatsapp/inbound" element={<InboundCall />} />
+              <Route path="/whatsapp/outbound" element={<OutboundCall />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Routes>
+          </MainLayout>
+        </BrowserRouter>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
 

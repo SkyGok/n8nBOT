@@ -221,6 +221,7 @@ export async function fetchEvents(
   pageSize: number = 50,
   filters?: { status?: string; direction?: string }
 ): Promise<EventsResponse> {
+  // For demo: No user_id filtering - show all calls
   let query = supabase
     .from('calls')
     .select('*', { count: 'exact' });
@@ -230,7 +231,9 @@ export async function fetchEvents(
     query = query.eq('status', filters.status);
   }
   if (filters?.direction) {
-    query = query.eq('direction', filters.direction);
+    // Use call_type column - this is the new standard column for filtering
+    // The SQL migration will populate call_type from direction column
+    query = query.eq('call_type', filters.direction);
   }
 
   // Pagination
@@ -248,7 +251,8 @@ export async function fetchEvents(
   const events: PhoneEvent[] = (data || []).map(call => ({
     id: call.id,
     phoneNumber: call.phone_number,
-    direction: call.direction as 'inbound' | 'outbound',
+    // Use call_type if available, fallback to direction for backward compatibility
+    direction: (call.call_type || call.direction) as 'inbound' | 'outbound',
     status: call.status as 'answered' | 'missed' | 'voicemail' | 'busy' | 'failed',
     duration: call.duration_seconds || 0,
     timestamp: call.timestamp,

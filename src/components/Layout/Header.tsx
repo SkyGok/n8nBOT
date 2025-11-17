@@ -3,20 +3,23 @@
  * Displays app title and navigation with toggleable menu button
  */
 
+import { useI18n } from '@/contexts/I18nContext';
+
 interface HeaderProps {
   onMenuClick: () => void;
   sidebarOpen: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
+  const { t } = useI18n();
   return (
-    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-30" role="banner">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-30 transition-colors duration-200" role="banner">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 sm:space-x-4">
           {/* Menu toggle button - visible on all screen sizes */}
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation"
+            className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation transition-colors"
             aria-label={sidebarOpen ? "Close menu" : "Open menu"}
             aria-expanded={sidebarOpen}
           >
@@ -56,16 +59,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
           </button>
           
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">n8n Phone Analytics</h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">AI Agent Dashboard</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{t('common.appTitle')}</h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">{t('common.appSubtitle')}</p>
           </div>
         </div>
         
         <nav aria-label="Main navigation">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button
-              className="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md p-2 sm:px-3 sm:py-2 touch-manipulation"
-              aria-label="Notifications"
+              className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md p-2 sm:px-3 sm:py-2 touch-manipulation transition-colors"
+              aria-label={t('common.notifications')}
             >
               <svg
                 className="w-5 h-5 sm:w-6 sm:h-6"

@@ -1,0 +1,40 @@
+{
+  "common": {
+    "dashboard": "Cruscotto",
+    "analytics": "Analisi",
+    "overview": "Panoramica",
+    "roiAnalysis": "Analisi ROI",
+    "whatsapp": "WhatsApp",
+    "messages": "Messaggi",
+    "inboundCalls": "Chiamate in Entrata",
+    "outboundCalls": "Chiamate in Uscita",
+    "calendar": "Calendario",
+    "settings": "Impostazioni",
+    "menu": "Menu",
+    "notifications": "Notifiche",
+    "appTitle": "Analisi Telefono n8n",
+    "appSubtitle": "Dashboard Agente IA"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "subtitle": "Personalizza le preferenze della tua applicazione",
+    "language": {
+      "title": "Lingua",
+      "subtitle": "Scegli la tua lingua preferita",
+      "current": "Lingua corrente"
+    },
+    "theme": {
+      "title": "Tema",
+      "subtitle": "Scegli il tuo tema colore preferito",
+      "current": "Tema corrente",
+      "light": "Chiaro",
+      "dark": "Scuro",
+      "system": "Sistema"
+    },
+    "info": {
+      "title": "Informazioni Impostazioni",
+      "message": "Le tue preferenze vengono salvate localmente nel tuo browser. La persistenza dei cookie verrà aggiunta in un aggiornamento futuro."
+    }
+  }
+}
+
