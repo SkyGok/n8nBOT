@@ -378,6 +378,113 @@ export interface Database {
           updated_at?: string;
         };
       };
+      projects: {
+        Row: {
+          id: string;
+          name: string;
+          target_quantity: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          target_quantity: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          target_quantity?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      project_sessions: {
+        Row: {
+          id: string;
+          project_id: string;
+          manufacturing_type: string;
+          started_at: string;
+          paused_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          manufacturing_type: string;
+          started_at?: string;
+          paused_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          manufacturing_type?: string;
+          started_at?: string;
+          paused_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      production_updates: {
+        Row: {
+          id: string;
+          project_id: string;
+          session_id: string | null;
+          quantity_completed: number;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          session_id?: string | null;
+          quantity_completed: number;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          session_id?: string | null;
+          quantity_completed?: number;
+          note?: string | null;
+          created_at?: string;
+        };
+      };
+      workers: {
+        Row: {
+          id: string;
+          name: string;
+          role: string | null;
+          assigned_station: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          role?: string | null;
+          assigned_station?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          role?: string | null;
+          assigned_station?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }
