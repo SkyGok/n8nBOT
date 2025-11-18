@@ -43,8 +43,9 @@ async function fetchApi<T>(endpoint: string): Promise<{ success: true; data: T }
 
 /**
  * Hook to fetch summary statistics
+ * Optionally filter by date range
  */
-export function useSummaryStats() {
+export function useSummaryStats(startDate?: Date, endDate?: Date) {
   const {
     summaryStats,
     isLoadingSummary,
@@ -61,7 +62,7 @@ export function useSummaryStats() {
       
       try {
         if (USE_SUPABASE) {
-          const data = await fetchSummaryStats();
+          const data = await fetchSummaryStats(startDate, endDate);
           setSummaryStats(data);
         } else {
           // Fallback to mock API
@@ -79,10 +80,14 @@ export function useSummaryStats() {
       }
     };
 
-    if (!summaryStats && !isLoadingSummary) {
+    // If date filters are provided, always fetch (for filtered views)
+    // If no date filters, only fetch if no data exists yet (for overall stats)
+    if (startDate || endDate) {
+      fetchSummary();
+    } else if (!summaryStats) {
       fetchSummary();
     }
-  }, [summaryStats, isLoadingSummary, setSummaryStats, setLoadingSummary, setSummaryError]);
+  }, [startDate?.toISOString(), endDate?.toISOString()]);
 
   return { summaryStats, isLoadingSummary, summaryError };
 }

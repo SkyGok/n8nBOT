@@ -66,8 +66,17 @@ export async function fetchCalendarEvents(
           description: event.description || undefined,
           location: event.location || undefined,
           allDay: event.all_day || false,
-          color: event.color || undefined,
-          metadata: event.metadata || {},
+          color: event.color_id || undefined,
+          metadata: {
+            ...(event.metadata || {}),
+            google_event_id: event.google_event_id,
+            user_id: event.user_id,
+            status: event.status,
+            timezone: event.timezone,
+            recurrence: event.recurrence,
+            attendees: event.attendees,
+            reminders: event.reminders,
+          },
         }));
         return events;
       }
@@ -184,6 +193,13 @@ export async function createCalendarEvent(
         metadata: event.metadata || {},
       };
 
+      // Extract color_id from metadata if present
+      if (event.metadata?.color_id) {
+        insertData.color_id = event.metadata.color_id;
+      } else if (event.metadata?.color) {
+        insertData.color_id = event.metadata.color;
+      }
+
       // Only include user_id if we have it (for RLS policies)
       if (userId) {
         insertData.user_id = userId;
@@ -209,9 +225,18 @@ export async function createCalendarEvent(
           end: new Date(data.end_time),
           description: data.description || undefined,
           location: data.location || undefined,
-          allDay: data.all_day,
+          allDay: data.all_day || false,
           color: data.color_id || undefined,
-          metadata: data.metadata || {},
+          metadata: {
+            ...(data.metadata || {}),
+            google_event_id: data.google_event_id,
+            user_id: data.user_id,
+            status: data.status,
+            timezone: data.timezone,
+            recurrence: data.recurrence,
+            attendees: data.attendees,
+            reminders: data.reminders,
+          },
         };
 
         // Also notify n8n webhook if configured
@@ -304,8 +329,14 @@ export async function updateCalendarEvent(
           : new Date(updates.end).toISOString();
       }
       if (updates.allDay !== undefined) updateData.all_day = updates.allDay;
-      if (updates.metadata !== undefined) updateData.metadata = updates.metadata || {};
-      updateData.updated_at = new Date().toISOString();
+      if (updates.metadata !== undefined) {
+        // Extract color from metadata if present, otherwise use metadata as-is
+        const metadata = updates.metadata || {};
+        updateData.metadata = metadata;
+        if (metadata.color_id !== undefined) updateData.color_id = metadata.color_id;
+      }
+      // Update synced_at when event is modified
+      updateData.synced_at = new Date().toISOString();
 
       const { data, error } = await supabase
         .from('calendar_events')
@@ -327,9 +358,18 @@ export async function updateCalendarEvent(
           end: new Date(data.end_time),
           description: data.description || undefined,
           location: data.location || undefined,
-          allDay: data.all_day,
+          allDay: data.all_day || false,
           color: data.color_id || undefined,
-          metadata: data.metadata || {},
+          metadata: {
+            ...(data.metadata || {}),
+            google_event_id: data.google_event_id,
+            user_id: data.user_id,
+            status: data.status,
+            timezone: data.timezone,
+            recurrence: data.recurrence,
+            attendees: data.attendees,
+            reminders: data.reminders,
+          },
         };
 
         // Also notify n8n webhook if configured
@@ -603,8 +643,9 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
       start_time: event.start.toISOString(),
       end_time: event.end.toISOString(),
       all_day: event.allDay || false,
-      color_id: event.color || null,
+      color_id: event.color || event.metadata?.color_id || event.metadata?.color || null,
       metadata: event.metadata || {},
+      synced_at: new Date().toISOString(),
     };
 
     if (userId) {
@@ -652,8 +693,10 @@ async function syncEventsToSupabase(events: CalendarEvent[]): Promise<void> {
       start_time: event.start.toISOString(),
       end_time: event.end.toISOString(),
       all_day: event.allDay || false,
-      color_id: event.color || null,
+      color_id: event.color || event.metadata?.color_id || event.metadata?.color || null,
+      status: (event.metadata?.status as string) || 'confirmed',
       metadata: event.metadata || {},
+      synced_at: new Date().toISOString(),
     }));
 
     // Use upsert to handle both insert and update

@@ -62,6 +62,35 @@ const getNavItems = (t: (key: string) => string): NavItem[] => [
     ],
   },
   {
+    label: t('common.calls'),
+    path: '/calls',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+      </svg>
+    ),
+    subItems: [
+      {
+        label: t('common.inboundCalls'),
+        path: '/calls/inbound',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        label: t('common.outboundCalls'),
+        path: '/calls/outbound',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
     label: t('common.whatsapp'),
     path: '/whatsapp',
     icon: (
@@ -124,6 +153,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
   const location = useLocation();
   const { t } = useI18n();
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    // Auto-expand Calls if we're on a calls sub-page
+    if (location.pathname.startsWith('/calls')) {
+      return ['/calls'];
+    }
     // Auto-expand WhatsApp if we're on a whatsapp sub-page
     if (location.pathname.startsWith('/whatsapp')) {
       return ['/whatsapp'];

@@ -9,12 +9,23 @@ import { formatISO, startOfDay, subDays, subMonths, startOfMonth } from 'date-fn
 
 /**
  * Fetch summary statistics from calls table
+ * Optionally filter by date range
  */
-export async function fetchSummaryStats(): Promise<SummaryStats> {
-  // Get all calls
-  const { data: calls, error } = await supabase
+export async function fetchSummaryStats(startDate?: Date, endDate?: Date): Promise<SummaryStats> {
+  // Build query
+  let query = supabase
     .from('calls')
     .select('status, duration_seconds, timestamp');
+
+  // Apply date filters if provided
+  if (startDate) {
+    query = query.gte('timestamp', startDate.toISOString());
+  }
+  if (endDate) {
+    query = query.lte('timestamp', endDate.toISOString());
+  }
+
+  const { data: calls, error } = await query;
 
   if (error) {
     // Enhanced error logging

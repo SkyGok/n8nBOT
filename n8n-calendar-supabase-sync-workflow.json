@@ -1,0 +1,421 @@
+{
+  "name": "Calendar to Supabase Appointments Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendarId": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "options": {
+          "timeMin": "={{ $now.toISO() }}",
+          "timeMax": "={{ $now.plus({ days: 30 }).toISO() }}",
+          "maxResults": 250,
+          "singleEvents": true,
+          "orderBy": "startTime"
+        }
+      },
+      "id": "google-calendar-fetch",
+      "name": "Fetch Calendar Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "1",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_API_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_API_KEY }}"
+            },
+            "Content-Type: application/json",
+            "Prefer: return=representation"
+          ]
+        },
+        "options": {
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "status",
+                "value": "eq.active"
+              },
+              {
+                "name": "select",
+                "value": "id,title,start_time,end_time,description,status,calendar_event_id"
+              },
+              {
+                "name": "order",
+                "value": "start_time.asc"
+              }
+            ]
+          }
+        }
+      },
+      "id": "supabase-get-appointments",
+      "name": "Get Supabase Appointments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get calendar events from input\nconst calendarEvents = $input.all();\n\n// Get Supabase appointments from previous node\nconst supabaseAppointments = $('Get Supabase Appointments').all();\n\n// Create a map of Supabase appointments by calendar_event_id\nconst supabaseMap = new Map();\nsupabaseAppointments.forEach(item => {\n  const appt = item.json;\n  if (appt.calendar_event_id) {\n    supabaseMap.set(appt.calendar_event_id, appt);\n  }\n});\n\n// Process calendar events\nconst results = [];\n\ncalendarEvents.forEach(item => {\n  const event = item.json;\n  const eventId = event.id || event.iCalUID || event.etag;\n  \n  // Extract event data\n  const eventData = {\n    calendar_event_id: eventId,\n    title: event.summary || event.title || 'Untitled Event',\n    start_time: event.start?.dateTime || event.start?.date || null,\n    end_time: event.end?.dateTime || event.end?.date || null,\n    description: event.description || null,\n    status: event.status === 'cancelled' ? 'cancelled' : 'active'\n  };\n  \n  const existingAppt = supabaseMap.get(eventId);\n  \n  if (!existingAppt) {\n    // New event - needs to be inserted\n    results.push({\n      json: {\n        action: 'insert',\n        data: eventData\n      }\n    });\n  } else {\n    // Check if update is needed\n    const needsUpdate = \n      existingAppt.title !== eventData.title ||\n      existingAppt.start_time !== eventData.start_time ||\n      existingAppt.end_time !== eventData.end_time ||\n      (existingAppt.description || '') !== (eventData.description || '') ||\n      existingAppt.status !== eventData.status;\n    \n    if (needsUpdate) {\n      results.push({\n        json: {\n          action: 'update',\n          id: existingAppt.id,\n          data: eventData\n        }\n      });\n    }\n    \n    // Mark as processed\n    supabaseMap.delete(eventId);\n  }\n});\n\n// Remaining Supabase appointments that don't exist in calendar should be cancelled\nsupabaseMap.forEach((appt, eventId) => {\n  if (appt.status !== 'cancelled') {\n    results.push({\n      json: {\n        action: 'cancel',\n        id: appt.id\n      }\n    });\n  }\n});\n\nreturn results;"
+      },
+      "id": "compare-and-prepare",
+      "name": "Compare & Prepare Actions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-insert",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "insert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-insert",
+      "name": "Filter Insert Actions",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-update",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "update",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-update",
+      "name": "Filter Update Actions",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-cancel",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "cancel",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-cancel",
+      "name": "Filter Cancel Actions",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_API_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_API_KEY }}"
+            },
+            "Content-Type: application/json",
+            "Prefer: return=representation"
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"title\": \"{{ $json.data.title }}\",\n  \"start_time\": \"{{ $json.data.start_time }}\",\n  \"end_time\": \"{{ $json.data.end_time }}\",\n  \"description\": \"{{ $json.data.description || '' }}\",\n  \"status\": \"{{ $json.data.status }}\",\n  \"calendar_event_id\": \"{{ $json.data.calendar_event_id }}\"\n}"
+      },
+      "id": "supabase-insert",
+      "name": "Insert to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments?id=eq.{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_API_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_API_KEY }}"
+            },
+            "Content-Type: application/json",
+            "Prefer: return=representation"
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"title\": \"{{ $json.data.title }}\",\n  \"start_time\": \"{{ $json.data.start_time }}\",\n  \"end_time\": \"{{ $json.data.end_time }}\",\n  \"description\": \"{{ $json.data.description || '' }}\",\n  \"status\": \"{{ $json.data.status }}\"\n}"
+      },
+      "id": "supabase-update",
+      "name": "Update in Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/appointments?id=eq.{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_API_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_API_KEY }}"
+            },
+            "Content-Type: application/json",
+            "Prefer: return=representation"
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={\n  \"status\": \"cancelled\"\n}"
+      },
+      "id": "supabase-cancel",
+      "name": "Cancel in Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Calendar Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Calendar Events": {
+      "main": [
+        [
+          {
+            "node": "Compare & Prepare Actions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Supabase Appointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Supabase Appointments": {
+      "main": [
+        [
+          {
+            "node": "Compare & Prepare Actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare & Prepare Actions": {
+      "main": [
+        [
+          {
+            "node": "Filter Insert Actions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Update Actions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Cancel Actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Insert Actions": {
+      "main": [
+        [
+          {
+            "node": "Insert to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Update Actions": {
+      "main": [
+        [
+          {
+            "node": "Update in Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Cancel Actions": {
+      "main": [
+        [
+          {
+            "node": "Cancel in Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

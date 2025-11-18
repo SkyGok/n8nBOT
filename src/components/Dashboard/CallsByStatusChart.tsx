@@ -3,13 +3,40 @@
  * Donut chart showing distribution of calls by status
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useSummaryStats } from '@/hooks/useDashboardData';
+import { startOfWeek, startOfMonth, startOfYear, subWeeks, endOfDay } from 'date-fns';
 
 export const CallsByStatusChart: React.FC = () => {
-  const { summaryStats, isLoadingSummary } = useSummaryStats();
   const [period, setPeriod] = useState<'year' | 'month' | 'week'>('year');
+
+  // Calculate date range based on selected period
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+    let start: Date;
+
+    switch (period) {
+      case 'week':
+        start = startOfWeek(subWeeks(now, 1));
+        break;
+      case 'month':
+        start = startOfMonth(now);
+        break;
+      case 'year':
+        start = startOfYear(now);
+        break;
+      default:
+        start = startOfYear(now);
+    }
+
+    return {
+      startDate: start,
+      endDate: endOfDay(now),
+    };
+  }, [period]);
+
+  const { summaryStats, isLoadingSummary } = useSummaryStats(startDate, endDate);
 
   if (isLoadingSummary) {
     return (
@@ -66,6 +93,31 @@ export const CallsByStatusChart: React.FC = () => {
     return null;
   };
 
+  if (data.length === 0) {
+    return (
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Calls by Status</h2>
+            <p className="text-sm text-gray-500">Distribution of call outcomes</p>
+          </div>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as 'year' | 'month' | 'week')}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            <option value="year">This year</option>
+            <option value="month">This month</option>
+            <option value="week">This week</option>
+          </select>
+        </div>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-gray-500">No calls found for the selected period</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
@@ -90,8 +142,8 @@ export const CallsByStatusChart: React.FC = () => {
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={100}
+              innerRadius={54}
+              outerRadius={90}
               paddingAngle={5}
               dataKey="value"
               label={({ percentage }) => `${percentage}%`}
