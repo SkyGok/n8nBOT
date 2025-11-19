@@ -117,7 +117,7 @@ export async function fetchCalendarEvents(
           const hasCalendarEvent = calendarEvents?.some(ce => ce.id === apt.calendar_event_id);
           return !hasCalendarEvent;
         })
-        .map((apt) => {
+        .map((apt): CalendarEvent | null => {
           const appointmentDate = apt.appointment_datetime || apt.scheduled_at;
           if (!appointmentDate) return null;
 
