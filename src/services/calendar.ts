@@ -37,7 +37,7 @@ function getCalendarWebhookUrl(): string | null {
 
 /**
  * Fetch calendar events
- * Priority: Supabase > n8n webhook > localStorage
+ * Priority: Supabase calendar_events > Supabase appointments > n8n webhook > localStorage
  */
 export async function fetchCalendarEvents(
   startDate: Date,
@@ -46,39 +46,123 @@ export async function fetchCalendarEvents(
   // Try Supabase first
   if (isSupabaseAvailable()) {
     try {
-      const { data, error } = await supabase
+      // Fetch calendar_events
+      const { data: calendarEvents, error: calendarError } = await supabase
         .from('calendar_events')
         .select('*')
         .gte('start_time', startDate.toISOString())
         .lte('end_time', endDate.toISOString())
         .order('start_time', { ascending: true });
 
-      if (error) {
-        console.error('[Calendar Service] Supabase error:', error);
-        // Fall through to next method
-      } else if (data) {
-        // Transform Supabase data to CalendarEvent format
-        const events: CalendarEvent[] = data.map((event) => ({
-          id: event.id,
-          title: event.title,
-          start: new Date(event.start_time),
-          end: new Date(event.end_time),
-          description: event.description || undefined,
-          location: event.location || undefined,
-          allDay: event.all_day || false,
-          color: event.color_id || undefined,
-          metadata: {
-            ...(event.metadata || {}),
-            google_event_id: event.google_event_id,
-            user_id: event.user_id,
-            status: event.status,
-            timezone: event.timezone,
-            recurrence: event.recurrence,
-            attendees: event.attendees,
-            reminders: event.reminders,
-          },
-        }));
-        return events;
+      // Fetch confirmed appointments and filter by date range in JavaScript
+      // This ensures we get all appointments that might fall within the range
+      const { data: allAppointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('status', 'Confirmed');
+
+      // Filter appointments by date range
+      const appointments = (allAppointments || []).filter((apt) => {
+        // Use appointment_datetime first, then scheduled_at as fallback
+        const appointmentDate = apt.appointment_datetime || apt.scheduled_at;
+        if (!appointmentDate) return false;
+        
+        const date = new Date(appointmentDate);
+        // Check if appointment falls within the requested date range
+        return date >= startDate && date <= endDate;
+      }).sort((a, b) => {
+        // Sort by appointment date
+        const dateA = new Date(a.appointment_datetime || a.scheduled_at || 0);
+        const dateB = new Date(b.appointment_datetime || b.scheduled_at || 0);
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      if (calendarError) {
+        console.error('[Calendar Service] Supabase calendar_events error:', calendarError);
+      }
+
+      if (appointmentsError) {
+        console.error('[Calendar Service] Supabase appointments error:', appointmentsError);
+      }
+
+      // Transform calendar_events to CalendarEvent format
+      const calendarEventList: CalendarEvent[] = (calendarEvents || []).map((event) => ({
+        id: event.id,
+        title: event.title,
+        start: new Date(event.start_time),
+        end: new Date(event.end_time),
+        description: event.description || undefined,
+        location: event.location || undefined,
+        allDay: event.all_day || false,
+        color: event.color_id || undefined,
+        metadata: {
+          ...(event.metadata || {}),
+          google_event_id: event.google_event_id,
+          user_id: event.user_id,
+          status: event.status,
+          timezone: event.timezone,
+          recurrence: event.recurrence,
+          attendees: event.attendees,
+          reminders: event.reminders,
+          appointment_id: event.appointment_id,
+        },
+      }));
+
+      // Transform appointments to CalendarEvent format (for appointments without calendar_events)
+      const appointmentEventList: CalendarEvent[] = (appointments || [])
+        .filter((apt) => {
+          // Only include appointments that don't have a calendar_event_id
+          // or whose calendar_event_id doesn't exist in calendar_events
+          if (!apt.calendar_event_id) return true;
+          const hasCalendarEvent = calendarEvents?.some(ce => ce.id === apt.calendar_event_id);
+          return !hasCalendarEvent;
+        })
+        .map((apt) => {
+          const appointmentDate = apt.appointment_datetime || apt.scheduled_at;
+          if (!appointmentDate) return null;
+
+          const startTime = new Date(appointmentDate);
+          const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
+
+          // Create title from appointment data
+          const titleParts = [];
+          if (apt.service_type) titleParts.push(apt.service_type);
+          if (apt.client_name) titleParts.push(apt.client_name);
+          if (apt.therapist_name) titleParts.push(apt.therapist_name);
+          const title = titleParts.length > 0 
+            ? titleParts.join(' - ')
+            : 'Appointment';
+
+          return {
+            id: apt.id,
+            title,
+            start: startTime,
+            end: endTime,
+            description: apt.notes || undefined,
+            location: undefined,
+            allDay: false,
+            color: undefined,
+            metadata: {
+              appointment_id: apt.id,
+              client_name: apt.client_name,
+              client_email: apt.client_email,
+              client_phone: apt.client_phone,
+              service_type: apt.service_type,
+              therapist_name: apt.therapist_name,
+              source: apt.source,
+            },
+          };
+        })
+        .filter((event): event is CalendarEvent => event !== null);
+
+      // Combine both lists, removing duplicates by ID
+      const allEvents = [...calendarEventList, ...appointmentEventList];
+      const uniqueEvents = Array.from(
+        new Map(allEvents.map(event => [event.id, event])).values()
+      );
+
+      if (uniqueEvents.length > 0) {
+        return uniqueEvents;
       }
     } catch (error) {
       console.error('[Calendar Service] Error fetching from Supabase:', error);

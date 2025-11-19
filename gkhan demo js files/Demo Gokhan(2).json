@@ -1,0 +1,527 @@
+{
+  "name": "Spa Booking - Fixed Architecture",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        -120
+      ],
+      "id": "f7e79105-bffd-41f2-8b6b-e6cb961fbba8",
+      "name": "Chat Trigger",
+      "webhookId": "04d321ce-05e2-4ddd-b24e-2af58313ebc1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -280,
+        160
+      ],
+      "id": "3c12416a-ff70-419c-85cb-98c96b13a702",
+      "name": "Conversation Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -380,
+        340
+      ],
+      "id": "c0a59556-198e-4574-8a9e-deb4b3ea9140",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bthPcc0SQgICNCxH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "gokhanskydulger@gmail.com",
+          "mode": "list",
+          "cachedResultName": "gokhanskydulger@gmail.com"
+        },
+        "timeMax": "={{ $now.plus({ week: 2 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        100,
+        460
+      ],
+      "id": "8d41dbd1-5383-4aad-95f2-61a1b0e86d03",
+      "name": "Calendar_Read",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ZKTpI4ZJwehLfWkg",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "start": "",
+        "end": "",
+        "additionalFields": {
+          "summary": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        220,
+        460
+      ],
+      "id": "b9281114-8c45-4ea7-be2d-07cdd96bef02",
+      "name": "Calendar_Create",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ZKTpI4ZJwehLfWkg",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "",
+        "subject": "",
+        "message": "",
+        "options": {
+          "appendAttribution": false,
+          "bccList": "meliksahin05@gmail.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        760,
+        460
+      ],
+      "id": "7e17114b-95c4-458d-ba8e-f39e45a0c193",
+      "name": "Gmail_Send",
+      "webhookId": "80d8ebb0-9f0b-4447-bb04-1431dedb82d5",
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "tableId": "appointments",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "scheduled_at",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "client_name",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "client_phone",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "client_email",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "therapist_name",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "service_type",
+              "fieldValue": ""
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "confirmed"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": ""
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        460
+      ],
+      "id": "453e110f-3e1e-4e4d-94e1-f02028d55ef1",
+      "name": "Supabase_Create_Appointment",
+      "credentials": {
+        "supabaseApi": {
+          "id": "6pZYqSqUzqDfWIC2",
+          "name": "AutomationN8N"
+        }
+      },
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "appointments",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        460
+      ],
+      "id": "2f1ab9b4-7d55-4582-810c-a579b73ac6ed",
+      "name": "Supabase_Check_History",
+      "credentials": {
+        "supabaseApi": {
+          "id": "6pZYqSqUzqDfWIC2",
+          "name": "AutomationN8N"
+        }
+      },
+      "disabled": false,
+      "notes": "Used to check history or overlaps"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are the Main Coordinator for a Spa Booking System.\n\n### CONTEXT\nToday is: {{ $now.setZone('Europe/Riga').toFormat('cccc, MMMM d, yyyy HH:mm') }} (Riga Time).\nAll appointments must be booked in this timezone.\n\n### YOUR JOB\n1. Converse naturally with the user in their language (Turkish, English, Russian, German).\n2. Use the provided TOOLS to perform actions. Do not ask the user to do things you can do.\n3. Coordinate the booking process.\n\n### BOOKING PROCESS (Strict Order)\n\n1. **Check Availability:** \n   - Ask for preferred Day/Time.\n   - Call `Calendar_Read` to see what is busy.\n   - Call `Supabase_Get_Therapists` (if available) to see roster.\n   - Confirm a slot is free.\n\n2. **Collect Details:**\n   - Name, Phone, Email, Service Type.\n\n3. **Execute Booking (Dual-Write):**\n   - Once details are confirmed, perform these steps IN ORDER:\n   - A: Call `Supabase_Create_Appointment` to save to the database.\n   - B: Call `Calendar_Create` to block the slot on the Google Calendar.\n   - C: Call `Sheets_Add_Row` (Legacy Backup) to save to the sheet.\n   - D: Call `Gmail_Send` to send the confirmation.\n\n4. **Confirmation:**\n   - Inform the user it is done.\n\n### TOOL USAGE RULES\n- **Dates:** Always convert dates to ISO format (YYYY-MM-DDTHH:mm:ss) for the tools. \n- **Phone:** Strip spaces and symbols.\n- **Supabase:** This is the primary database. Trust it over Sheets.\n\n### HANDLING CONFLICTS\nIf a tool returns an error (e.g., \"Slot taken\"), apologize to the user and offer the next closest time slot."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -80,
+        -120
+      ],
+      "id": "cc6cf55c-f8e8-4f81-809f-d7920a28a3e9",
+      "name": "Main Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "",
+            "Appointment Date": "",
+            "Booking Status": "Confirmed",
+            "Name": "",
+            "Service Type": "",
+            "Therapist Name": "",
+            "Notes": "",
+            "Phone": ""
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Status",
+              "displayName": "Booking Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Therapist Name",
+              "displayName": "Therapist Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        540,
+        460
+      ],
+      "id": "2e68ec35-3aaa-4775-a1f5-de276138f7e6",
+      "name": "Sheets_Add_Row",
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "therapists",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        460
+      ],
+      "id": "cd190cc7-42b7-438a-a675-3d441390141d",
+      "name": "Supabase_Get_Therapists",
+      "credentials": {
+        "supabaseApi": {
+          "id": "6pZYqSqUzqDfWIC2",
+          "name": "AutomationN8N"
+        }
+      },
+      "disabled": false,
+      "notes": "Reads available therapists"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "eventId": "",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        360,
+        460
+      ],
+      "id": "3451b0c2-cda6-4844-b21d-6d920ffc232c",
+      "name": "Calendar_Delete",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ZKTpI4ZJwehLfWkg",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar_Read": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar_Create": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail_Send": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase_Create_Appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase_Check_History": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets_Add_Row": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase_Get_Therapists": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar_Delete": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -6,42 +6,31 @@
 -- ============================================
 
 -- ============================================
--- PART 1: DELETE DATA FROM TABLES WITH FOREIGN KEYS FIRST
--- Delete in reverse dependency order to avoid constraint violations
+-- PART 1: TRUNCATE ALL TABLES
+-- Using TRUNCATE with RESTART IDENTITY CASCADE for better performance
+-- This will delete all data and reset sequences automatically
+-- CASCADE handles all foreign key dependencies
 -- ============================================
 
--- Delete appointments first (references calendar_events, calls, users)
-DELETE FROM public.appointments;
-
--- Delete calendar events (references appointments, users)
-DELETE FROM public.calendar_events;
-
--- Delete calls (references customers, users)
-DELETE FROM public.calls;
-
--- Delete WhatsApp messages (references users)
-DELETE FROM public.whatsapp_messages;
-
--- Delete engagement metrics (references users)
-DELETE FROM public.engagement_metrics;
-
--- Delete timeseries (references users)
-DELETE FROM public.timeseries;
-
--- Delete status summary (references users)
-DELETE FROM public.status_summary;
-
--- Delete customers (references users)
-DELETE FROM public.customers;
-
--- Delete therapists (no foreign keys to other tables)
-DELETE FROM public.therapists;
-
--- Delete users last (referenced by other tables)
-DELETE FROM public.users;
+-- Truncate all tables at once (PostgreSQL handles dependencies automatically)
+-- RESTART IDENTITY resets all sequences
+-- CASCADE handles foreign key constraints
+TRUNCATE TABLE 
+  public.appointments,
+  public.calendar_events,
+  public.calls,
+  public.whatsapp_messages,
+  public.engagement_metrics,
+  public.timeseries,
+  public.status_summary,
+  public.customers,
+  public.therapists,
+  public.users
+RESTART IDENTITY CASCADE;
 
 -- ============================================
 -- PART 2: RESET SEQUENCES (for SERIAL/BIGSERIAL columns)
+-- Note: TRUNCATE automatically resets sequences, but we'll do it explicitly for clarity
 -- ============================================
 
 -- Reset engagement_metrics sequence

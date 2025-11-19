@@ -18,35 +18,48 @@ export interface AppointmentFilters {
 export async function fetchAppointmentCount(filters?: AppointmentFilters): Promise<number> {
   try {
     // For demo: No user_id filtering - show all appointments
-    let query = supabase
+    // Fetch all appointments and filter by date in JavaScript for better reliability
+    const { data: allAppointments, error } = await supabase
       .from('appointments')
-      .select('id', { count: 'exact', head: true });
-
-    // Apply date filters if provided
-    if (filters?.startDate) {
-      const startDateISO = formatISO(startOfDay(filters.startDate));
-      query = query.gte('created_at', startDateISO);
-    }
-
-    if (filters?.endDate) {
-      const endDateISO = formatISO(endOfDay(filters.endDate));
-      query = query.lte('created_at', endDateISO);
-    }
-
-    // Note: user_id filtering removed for demo purposes
-    // Uncomment below if you want to filter by user_id:
-    // if (filters?.userId) {
-    //   query = query.eq('user_id', filters.userId);
-    // }
-
-    const { count, error } = await query;
+      .select('id, appointment_datetime, scheduled_at, created_at');
 
     if (error) {
       console.error('[ROI Service] Error fetching appointments:', error);
       return 0;
     }
 
-    return count || 0;
+    if (!allAppointments || allAppointments.length === 0) {
+      return 0;
+    }
+
+    // Filter by date range if provided
+    let filteredAppointments = allAppointments;
+    
+    if (filters?.startDate || filters?.endDate) {
+      filteredAppointments = allAppointments.filter((apt) => {
+        // Use appointment_datetime, scheduled_at, or created_at (in that order)
+        const appointmentDate = apt.appointment_datetime || apt.scheduled_at || apt.created_at;
+        if (!appointmentDate) return false;
+        
+        const date = new Date(appointmentDate);
+        
+        // Check start date filter
+        if (filters?.startDate) {
+          const startDate = startOfDay(filters.startDate);
+          if (date < startDate) return false;
+        }
+        
+        // Check end date filter
+        if (filters?.endDate) {
+          const endDate = endOfDay(filters.endDate);
+          if (date > endDate) return false;
+        }
+        
+        return true;
+      });
+    }
+
+    return filteredAppointments.length;
   } catch (error) {
     console.error('[ROI Service] Error fetching appointments:', error);
     return 0;

@@ -9,8 +9,8 @@ import React from 'react';
 interface MetricCardProps {
   title: string;
   value: string | number;
-  changePercent: string;
-  weeklyChange: string;
+  changePercent?: string;
+  weeklyChange?: string;
   color: 'green' | 'yellow' | 'blue' | 'red';
   icon: React.ReactNode;
   isLoading?: boolean;
@@ -73,25 +73,31 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           {typeof value === 'number' ? value.toLocaleString() : value}
         </p>
       </div>
-      <div className="flex items-center space-x-4 text-sm">
-        <div className="flex items-center space-x-1">
-          <svg
-            className="w-4 h-4 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-            />
-          </svg>
-          <span className="font-medium text-green-600">{changePercent}</span>
+      {(changePercent || weeklyChange) && (
+        <div className="flex items-center space-x-4 text-sm">
+          {changePercent && (
+            <div className="flex items-center space-x-1">
+              <svg
+                className="w-4 h-4 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
+              </svg>
+              <span className="font-medium text-green-600">{changePercent}</span>
+            </div>
+          )}
+          {weeklyChange && (
+            <span className="text-gray-500">{weeklyChange}</span>
+          )}
         </div>
-        <span className="text-gray-500">{weeklyChange}</span>
-      </div>
+      )}
     </div>
   );
 };

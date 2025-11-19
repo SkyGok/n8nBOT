@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { SummaryStats, TimeSeriesResponse, EventsResponse, EngagementMetrics, PhoneEvent, TimeSeriesDataPoint } from '@/types/api';
-import { formatISO, startOfDay, subDays, subMonths, startOfMonth } from 'date-fns';
+import { formatISO, startOfDay, endOfDay, subDays, subMonths, startOfMonth } from 'date-fns';
 
 /**
  * Fetch summary statistics from calls table
@@ -282,11 +282,15 @@ export async function fetchEvents(
 
 /**
  * Fetch engagement metrics
+ * If engagement_metrics table is empty, calculate from actual data
  */
 export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
   // Get today's metrics
   const today = formatISO(startOfDay(new Date())).split('T')[0];
+  const todayStart = startOfDay(new Date()).toISOString();
+  const todayEnd = endOfDay(new Date()).toISOString();
 
+  // Try to get from engagement_metrics table first
   const { data, error } = await supabase
     .from('engagement_metrics')
     .select('*')
@@ -295,12 +299,81 @@ export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
     .limit(1)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-    throw new Error(`Failed to fetch engagement metrics: ${error.message}`);
+  // If we have data from engagement_metrics table, use it
+  if (data && !error) {
+    return {
+      appointmentsViaAgent: data.appointments_via_agent || 0,
+      whatsappConversations: data.whatsapp_conversations || 0,
+      whatsappAppointments: data.whatsapp_appointments || 0,
+      notesCountToday: data.notes_count_today || 0,
+      lastUpdated: data.last_updated,
+    };
   }
 
-  if (!data) {
-    // Return default values if no data found
+  // If no data in engagement_metrics, calculate from actual tables
+  try {
+    // Count appointments created today (via AI agent or any source)
+    const { count: appointmentsCount, error: appointmentsError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'Confirmed')
+      .gte('created_at', todayStart)
+      .lte('created_at', todayEnd);
+
+    if (appointmentsError) {
+      console.error('[Engagement Metrics] Error counting appointments:', appointmentsError);
+    }
+
+    // Count WhatsApp conversations today (unique conversation_ids)
+    const { data: whatsappMessages, error: whatsappError } = await supabase
+      .from('whatsapp_messages')
+      .select('conversation_id')
+      .gte('timestamp', todayStart)
+      .lte('timestamp', todayEnd);
+    
+    const whatsappConversationsCount = whatsappMessages 
+      ? new Set(whatsappMessages.map(m => m.conversation_id)).size 
+      : 0;
+
+    if (whatsappError) {
+      console.error('[Engagement Metrics] Error counting WhatsApp conversations:', whatsappError);
+    }
+
+    // Count WhatsApp appointments (appointments with source='whatsapp' created today)
+    const { count: whatsappAppointmentsCount, error: whatsappApptError } = await supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'Confirmed')
+      .eq('source', 'whatsapp')
+      .gte('created_at', todayStart)
+      .lte('created_at', todayEnd);
+
+    if (whatsappApptError) {
+      console.error('[Engagement Metrics] Error counting WhatsApp appointments:', whatsappApptError);
+    }
+
+    // Count notes (from calls table) today
+    const { count: notesCount, error: notesError } = await supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .not('notes', 'is', null)
+      .gte('timestamp', todayStart)
+      .lte('timestamp', todayEnd);
+
+    if (notesError) {
+      console.error('[Engagement Metrics] Error counting notes:', notesError);
+    }
+
+    return {
+      appointmentsViaAgent: appointmentsCount || 0,
+      whatsappConversations: whatsappConversationsCount || 0,
+      whatsappAppointments: whatsappAppointmentsCount || 0,
+      notesCountToday: notesCount || 0,
+      lastUpdated: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('[Engagement Metrics] Error calculating metrics:', error);
+    // Return default values on error
     return {
       appointmentsViaAgent: 0,
       whatsappConversations: 0,
@@ -309,14 +382,6 @@ export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
       lastUpdated: new Date().toISOString(),
     };
   }
-
-  return {
-    appointmentsViaAgent: data.appointments_via_agent || 0,
-    whatsappConversations: data.whatsapp_conversations || 0,
-    whatsappAppointments: data.whatsapp_appointments || 0,
-    notesCountToday: data.notes_count_today || 0,
-    lastUpdated: data.last_updated,
-  };
 }
 
 /**
@@ -336,5 +401,159 @@ export async function getTotalCustomers(): Promise<number> {
 
   const uniqueSet = new Set((uniquePhones || []).map(c => c.phone_number));
   return uniqueSet.size || 1500;
+}
+
+/**
+ * WhatsApp message interface
+ */
+export interface WhatsAppMessage {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  phoneNumber: string;
+  contactName: string | null;
+  direction: 'inbound' | 'outbound';
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'contact' | 'sticker';
+  content: string | null;
+  mediaUrl: string | null;
+  timestamp: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+  readAt: string | null;
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * WhatsApp conversation interface (grouped messages)
+ */
+export interface WhatsAppConversation {
+  conversationId: string;
+  phoneNumber: string;
+  contactName: string | null;
+  messages: WhatsAppMessage[];
+  lastMessageTime: string;
+  unreadCount: number;
+}
+
+/**
+ * Fetch WhatsApp messages grouped by conversation
+ */
+export async function fetchWhatsAppConversations(): Promise<WhatsAppConversation[]> {
+  // Fetch all WhatsApp messages, ordered by timestamp
+  const { data: messages, error } = await supabase
+    .from('whatsapp_messages')
+    .select('*')
+    .order('timestamp', { ascending: false });
+
+  if (error) {
+    console.error('[Supabase Error] Failed to fetch WhatsApp messages:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    throw new Error(`Failed to fetch WhatsApp messages: ${error.message}`);
+  }
+
+  if (!messages || messages.length === 0) {
+    return [];
+  }
+
+  // Group messages by conversation_id
+  const conversationMap = new Map<string, WhatsAppConversation>();
+
+  messages.forEach((msg) => {
+    const convId = msg.conversation_id;
+    
+    if (!conversationMap.has(convId)) {
+      conversationMap.set(convId, {
+        conversationId: convId,
+        phoneNumber: msg.phone_number,
+        contactName: msg.contact_name,
+        messages: [],
+        lastMessageTime: msg.timestamp,
+        unreadCount: 0,
+      });
+    }
+
+    const conversation = conversationMap.get(convId)!;
+    
+    // Add message to conversation
+    conversation.messages.push({
+      id: msg.id,
+      conversationId: msg.conversation_id,
+      messageId: msg.message_id,
+      phoneNumber: msg.phone_number,
+      contactName: msg.contact_name,
+      direction: msg.direction,
+      messageType: msg.message_type,
+      content: msg.content,
+      mediaUrl: msg.media_url,
+      timestamp: msg.timestamp,
+      status: msg.status,
+      readAt: msg.read_at,
+      metadata: msg.metadata || {},
+    });
+
+    // Update last message time if this message is more recent
+    if (new Date(msg.timestamp) > new Date(conversation.lastMessageTime)) {
+      conversation.lastMessageTime = msg.timestamp;
+    }
+
+    // Count unread inbound messages
+    if (msg.direction === 'inbound' && msg.status !== 'read') {
+      conversation.unreadCount++;
+    }
+  });
+
+  // Sort messages within each conversation by timestamp (oldest first)
+  const conversations = Array.from(conversationMap.values());
+  conversations.forEach((conv) => {
+    conv.messages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  });
+
+  // Sort conversations by last message time (most recent first)
+  conversations.sort((a, b) => 
+    new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+  );
+
+  return conversations;
+}
+
+/**
+ * Fetch messages for a specific conversation
+ */
+export async function fetchConversationMessages(conversationId: string): Promise<WhatsAppMessage[]> {
+  const { data: messages, error } = await supabase
+    .from('whatsapp_messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('timestamp', { ascending: true });
+
+  if (error) {
+    console.error('[Supabase Error] Failed to fetch conversation messages:', error);
+    throw new Error(`Failed to fetch conversation messages: ${error.message}`);
+  }
+
+  if (!messages || messages.length === 0) {
+    return [];
+  }
+
+  return messages.map((msg) => ({
+    id: msg.id,
+    conversationId: msg.conversation_id,
+    messageId: msg.message_id,
+    phoneNumber: msg.phone_number,
+    contactName: msg.contact_name,
+    direction: msg.direction,
+    messageType: msg.message_type,
+    content: msg.content,
+    mediaUrl: msg.media_url,
+    timestamp: msg.timestamp,
+    status: msg.status,
+    readAt: msg.read_at,
+    metadata: msg.metadata || {},
+  }));
 }
 

@@ -232,10 +232,17 @@ export function useEngagementMetrics() {
       }
     };
 
-    if (!engagementMetrics && !isLoadingEngagement) {
+    // Always fetch engagement metrics to get latest appointment counts
+    // This ensures appointments created by n8n are reflected immediately
+    fetchEngagement();
+
+    // Set up polling to refresh engagement metrics every 30 seconds
+    const interval = setInterval(() => {
       fetchEngagement();
-    }
-  }, [engagementMetrics, isLoadingEngagement, setEngagementMetrics, setLoadingEngagement, setEngagementError]);
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [setEngagementMetrics, setLoadingEngagement, setEngagementError]);
 
   return { engagementMetrics, isLoadingEngagement, engagementError };
 }

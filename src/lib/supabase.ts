@@ -102,6 +102,14 @@ export interface Database {
           calendar_event_id: string | null;
           metadata: Record<string, unknown>;
           updated_at: string;
+          // AI Agent direct columns
+          appointment_datetime: string | null;
+          client_name: string | null;
+          client_email: string | null;
+          client_phone: string | null;
+          service_type: string | null;
+          therapist_name: string | null;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -115,6 +123,14 @@ export interface Database {
           calendar_event_id?: string | null;
           metadata?: Record<string, unknown>;
           updated_at?: string;
+          // AI Agent direct columns
+          appointment_datetime?: string | null;
+          client_name?: string | null;
+          client_email?: string | null;
+          client_phone?: string | null;
+          service_type?: string | null;
+          therapist_name?: string | null;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -127,6 +143,14 @@ export interface Database {
           calendar_event_id?: string | null;
           metadata?: Record<string, unknown>;
           updated_at?: string;
+          // AI Agent direct columns
+          appointment_datetime?: string | null;
+          client_name?: string | null;
+          client_email?: string | null;
+          client_phone?: string | null;
+          service_type?: string | null;
+          therapist_name?: string | null;
+          notes?: string | null;
         };
       };
       engagement_metrics: {

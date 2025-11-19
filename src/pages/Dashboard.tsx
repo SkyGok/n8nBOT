@@ -16,14 +16,6 @@ export const Dashboard: React.FC = () => {
   const { summaryStats, isLoadingSummary } = useSummaryStats();
   const { engagementMetrics, isLoadingEngagement } = useEngagementMetrics();
 
-  // Calculate weekly changes (mock data - replace with actual calculations)
-  const weeklyChange = {
-    totalCalls: '+3.8k this week',
-    answeredCalls: '+2.5k this week',
-    missedCalls: '+1.2k this week',
-    appointments: '+180 this week',
-  };
-
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -34,8 +26,6 @@ export const Dashboard: React.FC = () => {
         <MetricCard
           title="Total Calls"
           value={summaryStats?.totalCalls ?? 0}
-          changePercent="+18%"
-          weeklyChange={weeklyChange.totalCalls}
           color="green"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,8 +37,6 @@ export const Dashboard: React.FC = () => {
         <MetricCard
           title="Answered Calls"
           value={summaryStats?.answeredCalls ?? 0}
-          changePercent="+15%"
-          weeklyChange={weeklyChange.answeredCalls}
           color="yellow"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,8 +48,6 @@ export const Dashboard: React.FC = () => {
         <MetricCard
           title="Appointments"
           value={engagementMetrics?.appointmentsViaAgent ?? 0}
-          changePercent="+22%"
-          weeklyChange={weeklyChange.appointments}
           color="blue"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,8 +59,6 @@ export const Dashboard: React.FC = () => {
         <MetricCard
           title="Missed Calls"
           value={summaryStats?.missedCalls ?? 0}
-          changePercent="+8%"
-          weeklyChange={weeklyChange.missedCalls}
           color="red"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
