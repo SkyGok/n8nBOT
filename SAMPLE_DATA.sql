@@ -3,9 +3,13 @@
 -- This file contains realistic sample data for testing all features
 -- 
 -- IMPORTANT: Before running this script:
--- 1. Replace 'YOUR_USER_ID_HERE' with your actual Supabase user ID
+-- 1. Make sure all tables exist! Run these SQL files first if needed:
+--    - SUPABASE_SETUP.sql (creates main tables: calls, appointments, engagement_metrics, timeseries, status_summary)
+--    - SUPABASE_SCHEMA_UPDATE.sql (creates customers, whatsapp_messages, calendar_events)
+--    - SUPABASE_CALENDAR_SETUP.sql (creates calendar_events table if not already created)
+-- 2. Replace 'YOUR_USER_ID_HERE' with your actual Supabase user ID (if needed)
 --    You can get it from: SELECT id FROM auth.users LIMIT 1;
--- 2. Or create a test user first and use that ID
+-- 3. Or use demo mode: all data will be inserted with user_id = NULL
 -- ============================================
 
 -- ============================================
@@ -394,6 +398,7 @@ VALUES
    NOW());
 -- Note: Removed ON CONFLICT for demo mode - if you run this multiple times, delete existing data first:
 -- DELETE FROM public.status_summary WHERE user_id IS NULL;
+
 
 -- ============================================
 -- VERIFICATION QUERIES

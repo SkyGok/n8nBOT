@@ -49,37 +49,36 @@ export interface Database {
           phone_number: string;
           contact_name: string | null;
           direction: string;
-          call_type: 'inbound' | 'outbound';
           status: string;
           duration_seconds: number;
           timestamp: string;
           notes: string | null;
           agent_id: string | null;
+          created_at: string;
           user_id: string | null;
           customer_id: string | null;
-          created_at: string;
+          call_type: 'inbound' | 'outbound';
         };
         Insert: {
           id?: string;
           phone_number: string;
           contact_name?: string | null;
           direction: string;
-          call_type: 'inbound' | 'outbound';
           status: string;
-          duration_seconds: number;
+          duration_seconds?: number;
           timestamp: string;
           notes?: string | null;
           agent_id?: string | null;
+          created_at?: string;
           user_id?: string | null;
           customer_id?: string | null;
-          created_at?: string;
+          call_type: 'inbound' | 'outbound';
         };
         Update: {
           id?: string;
           phone_number?: string;
           contact_name?: string | null;
           direction?: string;
-          call_type?: 'inbound' | 'outbound';
           status?: string;
           duration_seconds?: number;
           timestamp?: string;
@@ -87,6 +86,7 @@ export interface Database {
           agent_id?: string | null;
           user_id?: string | null;
           customer_id?: string | null;
+          call_type?: 'inbound' | 'outbound';
         };
       };
       appointments: {
@@ -96,10 +96,12 @@ export interface Database {
           scheduled_at: string | null;
           created_by: string | null;
           call_id: string | null;
-          user_id: string | null;
-          calendar_event_id: string | null;
           status: string;
           created_at: string;
+          user_id: string | null;
+          calendar_event_id: string | null;
+          metadata: Record<string, unknown>;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -107,10 +109,12 @@ export interface Database {
           scheduled_at?: string | null;
           created_by?: string | null;
           call_id?: string | null;
+          status?: string;
+          created_at?: string;
           user_id?: string | null;
           calendar_event_id?: string | null;
-          status: string;
-          created_at?: string;
+          metadata?: Record<string, unknown>;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -118,9 +122,11 @@ export interface Database {
           scheduled_at?: string | null;
           created_by?: string | null;
           call_id?: string | null;
+          status?: string;
           user_id?: string | null;
           calendar_event_id?: string | null;
-          status?: string;
+          metadata?: Record<string, unknown>;
+          updated_at?: string;
         };
       };
       engagement_metrics: {
@@ -230,7 +236,7 @@ export interface Database {
           start_time: string;
           end_time: string;
           all_day: boolean;
-          timezone: string | null;
+          timezone: string;
           color_id: string | null;
           status: 'confirmed' | 'tentative' | 'cancelled';
           recurrence: string | null;
@@ -240,6 +246,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
           synced_at: string;
+          appointment_id: string | null;
         };
         Insert: {
           id?: string;
@@ -251,7 +258,7 @@ export interface Database {
           start_time: string;
           end_time: string;
           all_day?: boolean;
-          timezone?: string | null;
+          timezone?: string;
           color_id?: string | null;
           status?: 'confirmed' | 'tentative' | 'cancelled';
           recurrence?: string | null;
@@ -261,6 +268,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           synced_at?: string;
+          appointment_id?: string | null;
         };
         Update: {
           id?: string;
@@ -272,7 +280,7 @@ export interface Database {
           start_time?: string;
           end_time?: string;
           all_day?: boolean;
-          timezone?: string | null;
+          timezone?: string;
           color_id?: string | null;
           status?: 'confirmed' | 'tentative' | 'cancelled';
           recurrence?: string | null;
@@ -281,6 +289,7 @@ export interface Database {
           metadata?: Record<string, unknown>;
           updated_at?: string;
           synced_at?: string;
+          appointment_id?: string | null;
         };
       };
       whatsapp_messages: {

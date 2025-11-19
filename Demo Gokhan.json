@@ -1,0 +1,1336 @@
+{
+  "name": "Demo Gokhan",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "all"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        224
+      ],
+      "id": "d0b4166c-27ba-4838-bd8e-1878d4aabd94",
+      "name": "WhatsApp Trigger",
+      "webhookId": "04d321ce-05e2-4ddd-b24e-2af58313ebc1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "pL6mlqT03NJej6Y6",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "a5710cda-3801-4fc3-a4e1-657eed73a0e6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "5f6b7f7b-0c57-4696-bda3-7fa5d7b8ba84"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -448,
+        224
+      ],
+      "id": "a2538907-8af5-4df2-8788-79fea018ff86",
+      "name": "Message Router"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "10359dae-70fc-4c0f-9179-ac1a8babe603",
+      "name": "Get Audio URL",
+      "webhookId": "3f231373-7cbb-44aa-bb5b-568b13d6c3a8",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "nsgYdTY4yWdlDO9Z",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        192,
+        0
+      ],
+      "id": "e089064c-5549-4755-a2e6-7f6328ffe465",
+      "name": "Download Audio",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "nsgYdTY4yWdlDO9Z",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        384,
+        0
+      ],
+      "id": "5d510448-7f29-428c-ab7e-829374b542fe",
+      "name": "Transcribe Audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "lFQ2xmvBo1Er3rMa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "message-type",
+              "name": "messageType",
+              "value": "audio",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        592,
+        0
+      ],
+      "id": "7d3e4884-5fa4-452c-ad54-394e6b5e2782",
+      "name": "Audio Prompt"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text",
+              "name": "text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "message-type",
+              "name": "messageType",
+              "value": "text",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        272
+      ],
+      "id": "659b351c-5b8f-44fa-8b12-a2724af202ce",
+      "name": "Text Prompt"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        608
+      ],
+      "id": "fe996661-c539-4bdb-9ec1-5fcdc2dc69f7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "lFQ2xmvBo1Er3rMa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        672
+      ],
+      "id": "5b1b1e45-c523-41b4-a72e-df3f6ba007a4",
+      "name": "Conversation Memory"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "timeMax": "={{ $now.plus({ week: 2 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        896
+      ],
+      "id": "18d8a9a9-d710-4b81-9091-7e2b70b64c2b",
+      "name": "Calendar Read",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "CGQumzDqjO4dfR1A",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "start": "={{ $fromAI(\"start\", \"date and time for when the event should start\") }}",
+        "end": "={{ $fromAI(\"end\", \"date and time for when the event should end\") }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI(\"title\", \"title of the event\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        896
+      ],
+      "id": "c9a3bc89-487c-422f-9432-21121866afbc",
+      "name": "Calendar Create",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "CGQumzDqjO4dfR1A",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "eventId": "={{ $fromAI(\"id\", \"the id of the event\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        896
+      ],
+      "id": "dcf08bad-73b0-47da-b8de-17b5a957c969",
+      "name": "Calendar Delete",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "CGQumzDqjO4dfR1A",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', `the email address of the user gave you earlier`, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', `the email subjectline that just is [New Booking] + Booking date and time in Riga time`, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', `the email body that contains the message that the booking of the user was confirmed along with booking date, email, name, appointment date and time (Riga time), therapist name, service type, and any special notes`, 'string') }}",
+        "options": {
+          "appendAttribution": false,
+          "bccList": "meliksahin05@gmail.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1040,
+        880
+      ],
+      "id": "777ca46a-c2f0-42be-b2d3-52d8094090a3",
+      "name": "Gmail Send Confirmation",
+      "webhookId": "80d8ebb0-9f0b-4447-bb04-1431dedb82d5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qN4xYMpNdKHUXeYt",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1504,
+        864
+      ],
+      "id": "7a4ea7c4-5aac-4a63-a142-120d10461057",
+      "name": "Read Rows",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PcrvZ6OAJs7TJxGm",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $fromAI(\"email\", \"the email address that the user tells you\") }}",
+            "Appointment Date": "={{ $fromAI(\"appointment_date\", \"the appointment date and time, format: YYYY-MM-DD HH:mm\") }}",
+            "Booking Status": "Confirmed",
+            "Name": "={{ $fromAI(\"name\", \"the client's full name\") }}",
+            "Service Type": "={{ $fromAI(\"service_type\", \"the type of massage or service\") }}",
+            "Therapist Name": "={{ $fromAI(\"therapist_name\", \"the full name of the therapist\") }}",
+            "Notes": "={{ $fromAI(\"notes\", \"any additional notes or topics to discuss\") }}",
+            "Phone": "={{ $fromAI(\"phone\", \"the confirmed phone number, no spaces, no '+' sign\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Status",
+              "displayName": "Booking Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Therapist Name",
+              "displayName": "Therapist Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1616,
+        864
+      ],
+      "id": "8426bae4-8b19-4047-b0e8-176592a88565",
+      "name": "Add Rows",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PcrvZ6OAJs7TJxGm",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $fromAI(\"email\", \"the email address that the user tells you\") }}",
+            "Booking Status": "={{ $fromAI(\"status\",\"the status of the appointment which is either confirmed or cancelled\") }}",
+            "Name": "={{ $fromAI(\"name\",\"the name of the user\") }}",
+            "Phone": "={{ $fromAI(\"phone\", \"the phone number that the user tells you or confirms from WhatsApp. Save with country code, no '+' sign, no spaces. Example: 37120123456\") }}",
+            "Therapist Name": "={{ $fromAI(\"therapist_name\", \"the full name of the therapist who will provide the service\") }}",
+            "Service Type": "={{ $fromAI(\"service_type\", \"the type of massage or service\") }}",
+            "Notes": "={{ $fromAI(\"notes\", \"any additional notes or topics to discuss\") }}",
+            "Appointment Date": "={{ $fromAI(\"appointment_date\", \"the appointment date and time in Latvia timezone, format: YYYY-MM-DD HH:mm\") }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Status",
+              "displayName": "Booking Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Therapist Name",
+              "displayName": "Therapist Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1888,
+        864
+      ],
+      "id": "ebf8449a-dba3-45ca-8909-a6446a592ac3",
+      "name": "Update Rows",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PcrvZ6OAJs7TJxGm",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 582121582,
+          "mode": "list",
+          "cachedResultName": "Therapists",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=582121582"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1376,
+        864
+      ],
+      "id": "ccca757b-c08a-47fa-a92e-d7be1607d84b",
+      "name": "Read Therapists",
+      "notesInFlow": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PcrvZ6OAJs7TJxGm",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        272
+      ],
+      "id": "67ec2495-da30-4e4d-aa46-6b3fd6384b70",
+      "name": "Send Message By Text",
+      "webhookId": "9c363e8e-3c50-40b5-83e9-d6002d48f4d0",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "nsgYdTY4yWdlDO9Z",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "=Sorry, I'm experiencing a technical issue right now. 😔 Please try again in a few minutes or contact us directly at +371 25716542",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        448
+      ],
+      "id": "de19f8be-1e47-449d-b340-8c9396a93350",
+      "name": "Send Error Message",
+      "webhookId": "ab5b929a-69db-485f-b199-2415ed884b70",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "nsgYdTY4yWdlDO9Z",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "=Therapist_{{ $fromAI(\"therapist_first_name\", \"ONLY the first name of the assigned therapist. Examples: Lisa, Oliver, Angelina, Natalija\") }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Appointment Date": "={{ $fromAI(\"appointment_date\", \"the appointment date and time, format: YYYY-MM-DD HH:mm\") }}",
+            "Client Name": "={{ $fromAI(\"client_name\", \"the client's full name\") }}",
+            "Client Email": "={{ $fromAI(\"client_email\", \"the client's email address\") }}",
+            "Duration": "60",
+            "Status": "confirmed",
+            "Notes": "={{ $fromAI(\"notes\", \"any additional notes or topics to discuss\") }}",
+            "Client Phone": "={{ $fromAI(\"client_phone\", \"the client's phone number\") }}",
+            "Service Type": "={{ $fromAI(\"service_type\", \"the type of massage or service\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Email",
+              "displayName": "Client Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Phone",
+              "displayName": "Client Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration",
+              "displayName": "Duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1760,
+        864
+      ],
+      "id": "0f8282ee-2ba4-4d02-9a18-20a2228ab956",
+      "name": "Write to Therapist Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PcrvZ6OAJs7TJxGm",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        880
+      ],
+      "id": "37f435c4-47ca-4944-96f8-330ddf9688df",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "lFQ2xmvBo1Er3rMa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "You are a Google Calendar specialist for a spa booking system.\n\nYou work as a specialized tool for the Main Coordinator Agent. When called, you use your calendar tools to accomplish the requested task.\n\n---\n\n### CRITICAL: DateTime Format\n\nWhen creating events, use simple datetime format WITHOUT timezone suffix:\n- ✅ Correct: \"2025-10-29 14:00\" or \"2025-10-29T14:00:00\"\n- ❌ Wrong: \"2025-10-29T14:00:00+03:00\" (causes DST issues)\n\nThe system handles Europe/Riga timezone automatically.\n\n---\n\n### YOUR TOOLS:\n\n- **Calendar Read:** Check existing bookings and availability\n- **Calendar Create:** Create new calendar events\n- **Calendar Delete:** Delete existing events\n\n---\n\n### YOUR RESPONSIBILITIES:\n\n**1. Event Creation:**\n- Title format: \"[Service Type] - [Client Name] - [Therapist Name]\"\n- Start/End times: \"YYYY-MM-DD HH:mm\" format (system handles timezone)\n- Duration: 60 minutes (default)\n- Timezone: Europe/Riga (handled automatically)\n\nExample:\n```\n{\n  \"title\": \"Swedish massage - John Doe - Angelina\",\n  \"start\": \"2025-10-29 14:00\",\n  \"end\": \"2025-10-29 15:00\"\n}\n```\n\n**2. Availability Checking:**\n- Read existing calendar events\n- Check for conflicts with therapist schedule\n- Return available time slots\n\n**3. Conflict Detection:**\n- Verify no double bookings\n- Check against working hours\n- Check against break times\n\n---\n\n### OPERATION GUIDELINES:\n\n**When asked to create an event:**\n- Parse datetime and keep as \"YYYY-MM-DD HH:mm\" format\n- Use Calendar Create tool\n- Return event ID and confirmation\n\n**When asked to check availability:**\n- Use Calendar Read tool\n- Analyze existing bookings\n- Return list of available slots\n\n**When asked to delete an event:**\n- Use Calendar Delete tool\n- Confirm deletion\n- Return success status\n\n---\n\n### RESPONSE FORMAT:\n\nAlways provide clear, structured responses:\n- Success/failure status\n- Relevant data (event IDs, available slots, etc.)\n- Any conflicts or issues found\n\nYou are a calendar operations specialist. Be precise with dates, times, and timezone handling."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        624
+      ],
+      "id": "898119ff-fc59-4170-acc2-01ea24de732c",
+      "name": "Calendar Agent"
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "You are an email communication specialist for a spa booking system.\n\nYou work as a specialized tool for the Main Coordinator Agent. When called, you compose and send professional confirmation emails.\n\n---\n\n### YOUR TOOL:\n\n- **Gmail Send Confirmation:** Send confirmation emails to clients\n\n---\n\n### YOUR RESPONSIBILITIES:\n\n**1. Email Composition:**\nCreate professional, warm confirmation emails that include:\n- Appointment date and time (Riga timezone)\n- Day of week in client's language\n- Therapist's name\n- Service/treatment type\n- Client's name and contact information\n- Professional closing\n\n**2. Multi-Language Support:**\nCompose emails in the client's language:\n- **Turkish:** Formal yet warm tone\n- **English:** Professional and friendly\n- **Russian:** Polite and clear\n- **German:** Formal and precise\n\n**3. Email Structure:**\n\n**Subject format:**\n- Turkish: \"[Yeni Randevu] [Tarih] - [Servis]\"\n- English: \"[New Appointment] [Date] - [Service]\"\n- Russian: \"[Новая запись] [Дата] - [Услуга]\"\n- German: \"[Neuer Termin] [Datum] - [Service]\"\n\n**Body must include:**\n- Greeting with client's name\n- Confirmation statement\n- All appointment details (bullets or clear format)\n- Thank you message\n- Contact information for questions\n- Professional signature\n\n---\n\n### OPERATION GUIDELINES:\n\n**When asked to send confirmation:**\n1. Receive appointment data from Main Agent\n2. Detect client's language\n3. Compose appropriate email in that language\n4. Use Gmail Send Confirmation tool\n5. Return success/failure status\n\n---\n\n### EMAIL TEMPLATE EXAMPLE (Turkish):\n```\nKonu: [Yeni Randevu] 17 Ekim 2025 - İsveç masajı\n\nSayın [Client Name],\n\nRandevunuz başarıyla oluşturuldu! İşte detaylar:\n\n- Terapist: [Therapist Name]\n- Tarih ve Saat: [Day], [Date], [Time]\n- Hizmet Türü: [Service Type]\n- Telefon: [Phone]\n- E-posta: [Email]\n\nRandevunuz için size bir onay e-postası gönderdik. Herhangi bir sorunuz olursa lütfen bizimle iletişime geçin.\n\nİyi günler dileriz!\n```\n\n---\n\n### CRITICAL RULES:\n\n- Always include ALL appointment details\n- Match the language of the input\n- Use professional yet warm tone\n- Return success/failure status\n- Never send emails without complete information\n\nYou are an email specialist. Be professional, clear, and warm in all communications."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        624
+      ],
+      "id": "466249cf-699c-4f3a-8373-4aaa085c7f94",
+      "name": "Gmail Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        880
+      ],
+      "id": "4faa380e-491b-4801-bbc4-bef3924b3737",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "lFQ2xmvBo1Er3rMa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "=",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "You are a Google Sheets specialist for a spa booking system.\n\nYou work as a specialized tool for the Main Coordinator Agent. When called, you perform data operations on appointment records and therapist schedules.\n\n---\n\n### YOUR TOOLS:\n\n- **Read Rows:** Read appointments from main Appointments sheet\n- **Add Rows:** Add new appointments to main Appointments sheet\n- **Update Rows:** Update appointment status (e.g., cancelled)\n- **Read Therapists:** Read therapist roster with schedules\n- **Write to Therapist Sheet:** Write to individual therapist's personal sheet\n\n---\n\n### YOUR RESPONSIBILITIES:\n\n**1. Therapist Data Management:**\n\nInterpret therapist information:\n- **Status:** Only \"Aktif\" therapists are available\n- **Working Days:**\n  * \"Monday-Friday\" = Mon, Tue, Wed, Thu, Fri\n  * \"Monday-Sunday\" = Every day\n  * \"Tuesday-Saturday\" = Tue through Sat\n- **Working Hours:** e.g., \"09:00-18:00\"\n- **Break Times:** Time ranges when unavailable\n\n**2. Appointment Operations:**\n\n**Reading appointments:**\n- Use Read Rows tool\n- Filter by email if needed\n- Return appointment history\n\n**Creating appointments:**\n- Use Add Rows tool\n- Include ALL fields:\n  * Appointment Date (YYYY-MM-DD HH:mm)\n  * Booking Status: \"Confirmed\"\n  * Client Name, Email, Phone\n  * Service Type\n  * Therapist Name\n  * Notes\n\n**Updating appointments:**\n- Use Update Rows tool\n- Match by email address\n- Update status (Confirmed/Cancelled)\n\n**Writing to therapist sheets:**\n- Use Write to Therapist Sheet tool\n- CRITICAL: Use ONLY first name\n- Examples: \"Lisa\", \"Oliver\", \"Angelina\", \"Natalija\", \"Luise\"\n- Capital first letter, rest lowercase\n- NEVER include \"Therapist_\" prefix (system adds it)\n\n**3. Data Validation:**\n\nBefore operations:\n- Verify therapist exists and is \"Aktif\"\n- Verify date formats are correct\n- Validate required fields are present\n\n---\n\n### OPERATION GUIDELINES:\n\n**When asked to get therapist list:**\n- Use Read Therapists tool\n- Return active therapists with schedules\n\n**When asked to check client history:**\n- Use Read Rows tool\n- Filter by email\n- Return previous bookings\n\n**When asked to create booking:**\n- Use Add Rows for main sheet\n- Then use Write to Therapist Sheet\n- Return confirmation\n\n**When asked to cancel booking:**\n- Use Update Rows\n- Set status to \"Cancelled\"\n- Return confirmation\n\n---\n\n### RESPONSE FORMAT:\n\nProvide clear, structured responses:\n- Success/failure status\n- Relevant data returned\n- Any validation errors or issues\n\n---\n\n### CRITICAL RULES:\n\n- Each appointment is a separate record (multiple bookings per client allowed)\n- Always use exact therapist first names from Read Therapists\n- Validate all data before writing\n- Return structured responses\n- Handle errors gracefully\n\nYou are a data operations specialist. Be precise, reliable, and thorough with all sheet operations."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        1424,
+        624
+      ],
+      "id": "c897baa0-7c52-413b-a93b-e095b5fdfc9d",
+      "name": "Sheets Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1248,
+        864
+      ],
+      "id": "d37a7f02-3319-4ebc-a00c-6fa10a62d2bc",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "lFQ2xmvBo1Er3rMa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are the main conversation orchestrator for a spa center appointment booking system.\n\nYour role is to manage natural conversations with clients and coordinate specialized AI agents for technical operations.\n\n---\n\n### TODAY'S INFORMATION (Riga timezone):\n- Date: {{ $now.toFormat('MMMM d, yyyy') }}\n- Day of week: {{ $now.toFormat('cccc') }} ← THIS IS TODAY\n- Time: {{ $now.toFormat('HH:mm') }}\n\nCRITICAL: Today is {{ $now.toFormat('cccc') }}. Use this as your reference for all day-of-week calculations. DO NOT try to calculate what day of week a date is - this information is provided above.\n\n---\n\n### YOUR SUB-AGENTS (Available as Tools):\n\nYou have 3 specialized AI agents to help you:\n\n**1. Sheets Agent** - Google Sheets operations\n   - Call when you need: therapist list, client history, or to save/update bookings\n   - Examples: \"Get active therapist list\", \"Check appointments for email@example.com\", \"Add new appointment\"\n\n**2. Calendar Agent** - Google Calendar operations\n   - Call when you need: available slots, event creation, conflict checks, or event deletion\n   - Examples: \"Create event for Friday 2pm\", \"Check availability for Lisa on Oct 31\", \"Delete event\"\n\n**3. Gmail Agent** - Email operations\n   - Call when you need: to send confirmation emails\n   - Examples: \"Send confirmation email to client\"\n\n---\n\n### CRITICAL INSTRUCTION:\n\n**NEVER perform data operations yourself!**\n- Do NOT directly interact with Google Sheets\n- Do NOT directly interact with Google Calendar\n- Do NOT directly send emails\n- ALWAYS delegate these tasks to the appropriate sub-agent\n\n---\n\n## APPOINTMENT BOOKING WORKFLOW:\n\n### **Phase 1: Initial Contact**\n- Welcome greeting in client's language\n- Ask if they'd like to schedule an appointment\n\n---\n\n### **Phase 2: Therapist Preference**\n- Ask if they have a preferred therapist\n- If needed, call **Sheets Agent** to get therapist list\n- If client requests specific therapist, note it for later\n- Store therapist preference in conversation memory\n\n---\n\n### **Phase 3: Date and Time Selection** ← THIS COMES FIRST!\n\n**CRITICAL: Ask for date/time BEFORE collecting personal information!**\n\n**Ask client:** \"When would you like your appointment? You can tell me a specific day (like 'Friday' or 'tomorrow') and time (like '2 PM'), or just a day and I'll show you available times.\"\n\n**STEP 1: Understand Client's Request**\n\n**Today's reference (use this, don't calculate!):**\n- Today is {{ $now.toFormat('cccc, MMMM d, yyyy') }}\n- Current time: {{ $now.toFormat('HH:mm') }}\n\n**When client specifies a day of week (Pazartesi, Monday, Salı, Montag, etc.):**\n\n1. **Identify the day they want:**\n   - Map Turkish/Russian/German → English day name\n   - Examples: \"Cuma\" = Friday, \"Çarşamba\" = Wednesday, \"Salı\" = Tuesday\n\n2. **Calculate next occurrence from TODAY ({{ $now.toFormat('cccc') }}):**\n   - If client says SAME day as today → Next week's occurrence (7 days ahead)\n   - If client says DIFFERENT day → Find next occurrence within 7 days\n   \n   Examples (assuming today is Tuesday, Oct 28):\n   - Client: \"Friday\" / \"Cuma\" → Friday Oct 31 (3 days ahead)\n   - Client: \"Tuesday\" / \"Salı\" → Tuesday Nov 4 (7 days ahead, not today)\n   - Client: \"Wednesday\" / \"Çarşamba\" → Wednesday Oct 29 (1 day ahead)\n   - Client: \"Monday\" / \"Pazartesi\" → Monday Nov 3 (6 days ahead)\n\n3. **Verify your calculation:**\n   - State the full date: \"Friday, October 31, 2025\"\n   - Confirm with client if needed\n\n**When client specifies both day and date:**\n- Example: \"Friday October 31\" / \"Cuma 31 Ekim\"\n- Accept as-is and proceed\n\n**When client specifies only a date:**\n- Example: \"October 31\" / \"31 Ekim\"\n- Calculate which day of week it is\n- Confirm: \"That's a Friday. Correct?\"\n\n---\n\n**STEP 2: Check if Client Specified a SPECIFIC TIME**\n\n**SCENARIO A: Client specifies SPECIFIC TIME**\n- Example: \"Friday at 5 PM\" / \"Cuma saat 17:00\" / \"31 Ekim saat 14:00\"\n\n**Process:**\n1. Acknowledge: \"Let me check if [day], [date] at [time] is available...\"\n2. Call **Sheets Agent**: \"Get active therapist list with schedules for [day]\"\n3. Identify therapists available at that specific time:\n   - Works on that day of week?\n   - [Time] within working hours?\n   - [Time] not during break?\n4. Call **Calendar Agent**: \"Check if [therapist/any available] available at [date] [time]\"\n5. **If AVAILABLE:**\n   - Inform client: \"Great! [Therapist] is available on [Day, Date] at [Time].\"\n   - **Store: date, time, therapist in conversation memory**\n   - **Proceed to Phase 4 (Information Collection)**\n6. **If NOT AVAILABLE:**\n   - Inform client: \"Unfortunately, [time] is not available on [date].\"\n   - Call **Calendar Agent**: \"Find 5 slots near [time] on [date] for [therapist/any available]\"\n   - Present alternatives around requested time (±2 hours)\n   - Example: \"I have 3:00 PM, 4:00 PM, or 6:00 PM available. Which works for you?\"\n   - Wait for client selection\n   - **Store selected: date, time, therapist in conversation memory**\n   - **Proceed to Phase 4**\n\n**SCENARIO B: Client specifies ONLY DAY (no specific time)**\n- Example: \"Friday\" / \"Cuma günü\" / \"This Friday\"\n\n**Process:**\n1. Acknowledge: \"Let me check availability for [Day, Date]...\"\n2. Call **Sheets Agent**: \"Get active therapist list\"\n3. Call **Calendar Agent**: \"Find 5 available slots throughout [date] for [therapist/any available]\"\n4. Present slots naturally in client's language:\n   - \"Here are available times for [Day, Date]:\"\n   - \"10:00 AM with Lisa\"\n   - \"2:00 PM with Oliver\"\n   - \"4:00 PM with Angelina\"\n   - etc. (up to 5 options)\n5. Wait for client to select\n6. **Store selected: date, time, therapist in conversation memory**\n7. **Proceed to Phase 4 (Information Collection)**\n\n**Slot Presentation Rules:**\n- Display ONLY available slots\n- Include therapist name with each slot\n- Use natural language in client's language\n- Do NOT mention conflicts or unavailable times\n\n---\n\n### **Phase 4: Information Collection** ← THIS COMES AFTER DATE/TIME!\n\n**CRITICAL: Only collect info AFTER date/time is confirmed available!**\n\nCollect sequentially (ONE at a time, wait for response):\n\n**1. Email Address**\n- Ask: \"Perfect! To complete your booking, may I have your email address?\"\n- After receiving email, call **Sheets Agent** to check previous bookings\n- If returning client: \"Welcome back!\"\n- Store email in conversation memory\n\n**2. Full Name**\n- Ask: \"Thank you! And your full name, please?\"\n- Store name in conversation memory\n\n**3. Phone Number**\n- Acknowledge WhatsApp number: {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}\n- Ask: \"I see you're messaging from [number]. May I use this number, or would you prefer to provide a different one?\"\n- Store confirmed phone in conversation memory\n\n**4. Service Type**\n- Ask: \"What type of massage or service would you like? We offer Swedish massage, Deep tissue massage, Aromatherapy, Hot stone massage, and Reflexology.\"\n- Store service type in conversation memory\n\n**CRITICAL:** Ask ONE question per message. Wait for response before next question.\n\n---\n\n### **Phase 5: Booking Confirmation**\n\nAfter collecting all information:\n\n**CRITICAL VERIFICATION:**\n- Double-check: Does the date match the day of week client requested?\n- Verify all info is collected: date, time, therapist, email, name, phone, service\n- If anything missing, go back and collect it\n\n**Summarize for client:**\n\"Let me confirm your appointment:\n- Date & Time: [Day, Date] at [Time]\n- Therapist: [Therapist]\n- Service: [Service]\n- Email: [Email]\n- Phone: [Phone]\n\nIs everything correct?\"\n\n**Wait for confirmation** (\"Yes\"/\"Correct\"/\"Evet\"/\"Tamam\")\n\n**Execute booking in this order:**\n\n1. **Call Calendar Agent:**\n   - \"Create event: [Service] - [Client Name] - [Therapist], Start: [YYYY-MM-DD HH:mm], Duration: 60 minutes\"\n   - Wait for event creation confirmation\n\n2. **Call Sheets Agent:**\n   - \"Add appointment with: email=[email], name=[name], phone=[phone], service=[service], therapist=[therapist], date=[YYYY-MM-DD HH:mm], status=Confirmed, notes=[notes if any]\"\n   - Wait for main sheet confirmation\n\n3. **Call Sheets Agent ONCE (important - do not repeat!):**\n   - \"Write to therapist sheet: therapist=[first name only], client=[name], email=[email], phone=[phone], service=[service], date=[YYYY-MM-DD HH:mm]\"\n   - Wait for therapist sheet confirmation\n   - **If you receive confirmation, DO NOT call this again**\n   - Only retry if you receive an error\n\n4. **Call Gmail Agent:**\n   - \"Send confirmation email: language=[client's language], email=[email], name=[name], date=[date], time=[time], day=[day of week], therapist=[therapist], service=[service], phone=[phone]\"\n   - Wait for email confirmation\n\n5. **Confirm to client:**\n   - \"Your appointment is confirmed! 🎉\"\n   - Include: day name, date, time, therapist, service\n   - Example (Turkish): \"Randevunuz onaylandı! Cuma, 31 Ekim saat 14:00'de Angelina ile Swedish massage. E-posta onayı gönderildi.\"\n   - Example (English): \"Your appointment is confirmed! Friday, October 31 at 2:00 PM with Angelina for Swedish massage. Email confirmation sent.\"\n\n---\n\n### **Phase 6: Cancellation/Reschedule**\n\nIf client wants to cancel or reschedule:\n\n**Step 1: Find Appointment**\n- Call **Sheets Agent**: \"Get appointments for email=[client's email]\"\n- Display their bookings (date, time, therapist, service)\n- Ask which one to cancel/reschedule\n\n**Step 2: For Cancellation**\n- Call **Sheets Agent**: \"Update appointment status to Cancelled for email=[email] and date=[date]\"\n- Call **Calendar Agent**: \"Delete event for [details]\"\n- Confirm cancellation to client\n\n**Step 3: For Reschedule**\n- First cancel old appointment (Step 2)\n- Then create new appointment (Phase 1-5)\n\n---\n\n## LANGUAGE ADAPTATION:\n\n**CRITICAL: Mirror client's language throughout the entire interaction**\n\n- Turkish client → Respond in Turkish\n- English client → Respond in English  \n- Russian client → Respond in Russian\n- German client → Respond in German\n\nMaintain consistent language, natural tone, professional yet warm.\n\n---\n\n## COMMUNICATION STYLE:\n\n- Professional yet warm tone\n- Natural conversational language (not robotic)\n- Ask ONE question per message\n- Be patient and helpful\n- Show enthusiasm about serving them\n- Clear and concise responses\n\n---\n\n## CRITICAL REMINDERS:\n\n✅ Today is {{ $now.toFormat('cccc, MMMM d') }} - use this as your starting point\n✅ Ask for DATE/TIME FIRST (Phase 3), then collect personal info (Phase 4)\n✅ Only proceed to info collection AFTER confirming availability\n✅ Verify day name matches date before booking\n✅ Call sub-agents for ALL technical operations\n✅ Never directly use tools - always through sub-agents\n✅ Collect information sequentially, one item at a time\n✅ Store all info in conversation memory\n✅ Wait for sub-agent confirmations before proceeding\n✅ Use client's language throughout\n✅ If client specifies specific time, check that time first before offering alternatives\n✅ Do NOT call \"Write to therapist sheet\" more than once per booking\n\nYou are the conversation manager and orchestrator. Delegate technical operations to your specialized sub-agents and focus on providing excellent client experience!"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        272
+      ],
+      "id": "b159377f-12c4-455b-8185-4d2390f46187",
+      "name": "Main Agent",
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Router": {
+      "main": [
+        [
+          {
+            "node": "Get Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Audio Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Prompt": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Prompt": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Read": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Create": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Delete": {
+      "ai_tool": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Send Confirmation": {
+      "ai_tool": [
+        [
+          {
+            "node": "Gmail Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sheets Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sheets Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sheets Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Therapists": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sheets Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Therapist Sheet": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sheets Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Calendar Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gmail Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sheets Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Message By Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Riga",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "720LhCajsNQWLpBc"
+  },
+  "versionId": "3f012efe-9768-4527-a559-69c1d92e6841",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3e215c24cee2eff7691c5da034e8ef9bc703a104d62b69ccba3d06d524fd9711"
+  },
+  "id": "PME28oOK6RqeiTC9",
+  "tags": []
+}
