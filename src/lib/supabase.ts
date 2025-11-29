@@ -28,16 +28,45 @@ if (useSupabase && (!supabaseUrl || !supabaseAnonKey)) {
 }
 
 // Create Supabase client with fallback to placeholder if not configured
-export const supabase = createClient(
+// This is the base client used for authentication and tenant management
+export const supabase = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+      persistSession: true, // ✅ Enable session persistence for multi-tenant
+      autoRefreshToken: true, // ✅ Enable token refresh
+      detectSessionInUrl: true,
     },
   }
 );
+
+// Tenant-specific Supabase client (set by TenantContext)
+let tenantSupabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+
+/**
+ * Set the tenant-specific Supabase client
+ * Called by TenantContext after loading tenant configuration
+ */
+export function setTenantSupabaseClient(client: ReturnType<typeof createClient<Database>> | null) {
+  tenantSupabaseClient = client;
+}
+
+/**
+ * Get the tenant-specific Supabase client
+ * Use this in all data service functions to ensure tenant isolation
+ * @throws Error if tenant client is not initialized
+ */
+export function getTenantSupabase(): ReturnType<typeof createClient<Database>> {
+  if (!tenantSupabaseClient) {
+    throw new Error(
+      'Tenant Supabase client not initialized. ' +
+      'User must be authenticated and have a tenant. ' +
+      'Make sure TenantProvider is set up and user is logged in.'
+    );
+  }
+  return tenantSupabaseClient;
+}
 
 // Database types matching your Supabase schema
 export interface Database {
