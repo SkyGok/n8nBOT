@@ -32,12 +32,12 @@ DECLARE
   v_appointment_id UUID;
   v_appointment_datetime TIMESTAMPTZ;
 BEGIN
-  -- Set appointment datetime: November 20th at 2:00 PM (current year, or next year if date has passed)
+  -- Set appointment datetime: November 21st at 2:00 PM (current year, or next year if date has passed)
   v_appointment_datetime := (
     CASE 
-      WHEN DATE_TRUNC('year', NOW()) + INTERVAL '10 months' + INTERVAL '19 days' + INTERVAL '14 hours' > NOW()
-      THEN DATE_TRUNC('year', NOW()) + INTERVAL '10 months' + INTERVAL '19 days' + INTERVAL '14 hours'
-      ELSE DATE_TRUNC('year', NOW()) + INTERVAL '1 year' + INTERVAL '10 months' + INTERVAL '19 days' + INTERVAL '14 hours'
+      WHEN DATE_TRUNC('year', NOW()) + INTERVAL '10 months' + INTERVAL '20 days' + INTERVAL '14 hours' > NOW()
+      THEN DATE_TRUNC('year', NOW()) + INTERVAL '10 months' + INTERVAL '20 days' + INTERVAL '14 hours'
+      ELSE DATE_TRUNC('year', NOW()) + INTERVAL '1 year' + INTERVAL '10 months' + INTERVAL '20 days' + INTERVAL '14 hours'
     END
   );
   -- Get or create user
@@ -80,7 +80,7 @@ BEGIN
     WHERE phone_number = '+905551234567' LIMIT 1;
   END IF;
 
-  -- 3. Insert a Therapist
+  -- 3. Insert a Therapist (Oliver)
   INSERT INTO public.therapists (
     first_name,
     last_name,
@@ -94,17 +94,17 @@ BEGIN
     break_end,
     notes
   ) VALUES (
-    'Sarah',
-    'Johnson',
-    'sarah.johnson@spa.com',
-    '+905551234568',
+    'Oliver',
+    'Martinez',
+    'oliver.martinez@spa.com',
+    '+905551234570',
     'Aktif',
-    ARRAY['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-    '09:00:00',
-    '18:00:00',
-    '13:00:00',
+    ARRAY['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    '10:00:00',
+    '19:00:00',
     '14:00:00',
-    'Expert therapist with 8 years of experience in therapeutic massage'
+    '15:00:00',
+    'Expert in deep tissue massage and sports therapy. Certified in hot stone therapy.'
   )
   ON CONFLICT DO NOTHING
   RETURNING id INTO v_therapist_id;
@@ -112,7 +112,7 @@ BEGIN
   -- If therapist already exists, get its ID
   IF v_therapist_id IS NULL THEN
     SELECT id INTO v_therapist_id FROM public.therapists 
-    WHERE email = 'sarah.johnson@spa.com' LIMIT 1;
+    WHERE email = 'oliver.martinez@spa.com' LIMIT 1;
   END IF;
 
   -- 4. Insert a Calendar Event (references users)
@@ -132,8 +132,8 @@ BEGIN
   ) VALUES (
     'whatsapp_appointment_12345',
     v_user_id,
-    'Therapeutic Massage - John Doe - Sarah Johnson',
-    'Therapeutic massage session for John Doe with therapist Sarah Johnson. Booked via WhatsApp.',
+    'Therapeutic Massage - John Doe - Oliver Martinez',
+    'Therapeutic massage session for John Doe with therapist Oliver Martinez. Booked via WhatsApp.',
     'Spa Center - Room 1',
     v_appointment_datetime,
     v_appointment_datetime + INTERVAL '1 hour',
@@ -142,7 +142,7 @@ BEGIN
     'confirmed',
     '[
       {"email": "customer@example.com", "name": "John Doe", "responseStatus": "accepted"},
-      {"email": "sarah.johnson@spa.com", "name": "Sarah Johnson", "responseStatus": "accepted"}
+      {"email": "oliver.martinez@spa.com", "name": "Oliver Martinez", "responseStatus": "accepted"}
     ]'::jsonb,
     '[
       {"method": "email", "minutes": 60},
@@ -188,8 +188,8 @@ BEGIN
     'customer@example.com',
     '+905551234567',
     'Therapeutic Massage',
-    'Sarah Johnson',
-    'Appointment booked via WhatsApp conversation. Customer requested November 20th at 2:00 PM. Confirmed via WhatsApp.',
+    'Oliver Martinez',
+    'Appointment booked via WhatsApp conversation. Customer requested November 21st at 2:00 PM. Confirmed via WhatsApp.',
     '{"source": "whatsapp", "booking_method": "whatsapp_message", "conversation_id": "conv_12345"}'::jsonb
   )
   ON CONFLICT DO NOTHING
@@ -288,10 +288,10 @@ BEGIN
     'John Doe',
     'inbound',
     'text',
-    'I would like to book for November 20th at 2:00 PM if that works.',
+    'I would like to book for November 21st at 2:00 PM if that works.',
     v_appointment_datetime - INTERVAL '3 days' - INTERVAL '1 hour' - INTERVAL '30 minutes',
     'read',
-    '{"platform": "whatsapp", "conversation_type": "booking", "requested_date": "2024-11-20", "requested_time": "14:00"}'::jsonb
+      '{"platform": "whatsapp", "conversation_type": "booking", "requested_date": "2024-11-21", "requested_time": "14:00"}'::jsonb
   )
   ON CONFLICT (message_id) DO NOTHING;
 
@@ -316,7 +316,7 @@ BEGIN
     'John Doe',
     'outbound',
     'text',
-    'Perfect! I have booked your therapeutic massage appointment for November 20th at 2:00 PM with Sarah Johnson. You will receive a confirmation email shortly. See you then!',
+    'Perfect! I have booked your therapeutic massage appointment for November 21st at 2:00 PM with Oliver Martinez. You will receive a confirmation email shortly. See you then!',
     v_appointment_datetime - INTERVAL '3 days' - INTERVAL '1 hour' - INTERVAL '15 minutes',
     'delivered',
     '{"platform": "whatsapp", "conversation_type": "booking", "appointment_confirmed": true}'::jsonb
@@ -446,7 +446,7 @@ ORDER BY table_name;
 -- ============================================
 -- Sample data has been inserted into all tables.
 -- Appointment created via WhatsApp conversation (no call).
--- Appointment scheduled for November 20th at 2:00 PM.
+-- Appointment scheduled for November 21st at 2:00 PM.
 -- WhatsApp conversation includes 5 messages showing the booking flow.
 -- ============================================
 
