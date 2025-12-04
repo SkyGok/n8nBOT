@@ -1,0 +1,1409 @@
+{
+  "name": "telegram demo gokhan",
+  "notes": "WORKFLOW OVERVIEW: Multi-channel appointment booking system (WhatsApp + Telegram) with AI agent orchestration. Features: 1) Audio/text message processing, 2) Google Gemini AI agent for natural conversations, 3) Dual-write strategy: Supabase (primary) + Google Sheets (legacy), 4) Google Calendar integration, 5) Multi-language support. UPDATED: Supabase tools enabled with proper field mappings and filters.",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "all"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        224
+      ],
+      "id": "b34249ea-2f2a-44b9-b767-32d80fef0e18",
+      "name": "WhatsApp Trigger",
+      "webhookId": "04d321ce-05e2-4ddd-b24e-2af58313ebc1",
+      "alwaysOutputData": false,
+      "notes": "TRIGGER: Receives incoming WhatsApp messages (text or audio). Routes to Message Router for processing."
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "a5710cda-3801-4fc3-a4e1-657eed73a0e6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "5f6b7f7b-0c57-4696-bda3-7fa5d7b8ba84"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -240,
+        224
+      ],
+      "id": "12ab14df-826c-4987-af10-2ed01596f583",
+      "name": "Message Router",
+      "notes": "ROUTER: Separates audio messages (route to transcription) from text messages (route directly to AI agent)."
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6b3cb9a4-65c2-4ac0-9467-bcc63bf917e1",
+      "name": "Get Audio URL",
+      "webhookId": "3f231373-7cbb-44aa-bb5b-568b13d6c3a8",
+      "notes": "AUDIO PROCESSING: Retrieves the media URL for audio messages from WhatsApp API."
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "7ba29aae-b64d-42f1-a19d-4a370c3865ec",
+      "name": "Download Audio",
+      "notes": "AUDIO PROCESSING: Downloads the audio file from WhatsApp media URL for transcription."
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        592,
+        0
+      ],
+      "id": "0386053d-5608-48ed-88a7-7d8742abb47a",
+      "name": "Transcribe Audio",
+      "notes": "AUDIO PROCESSING: Converts audio messages to text using OpenAI Whisper transcription."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "message-type",
+              "name": "messageType",
+              "value": "audio",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        0
+      ],
+      "id": "e578a27b-ccec-4617-96c4-d630b2d189f4",
+      "name": "Audio Prompt",
+      "notes": "DATA PREP: Formats transcribed audio text for the AI agent with message type flag."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text",
+              "name": "text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "message-type",
+              "name": "messageType",
+              "value": "text",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        272
+      ],
+      "id": "b0e366bd-c520-4987-b564-17185f90ba6f",
+      "name": "Text Prompt",
+      "notes": "DATA PREP: Formats text messages for the AI agent with message type flag."
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        672
+      ],
+      "id": "458b0d4d-7e12-4db6-aa89-ca7930b61150",
+      "name": "Conversation Memory",
+      "notes": "MEMORY: Maintains conversation context using WhatsApp phone number as session key. Stores last 20 messages for context."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "timeMax": "={{ $now.plus({ week: 2 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        656,
+        736
+      ],
+      "id": "9a60020e-edf1-4254-98be-5bf3fc55fd9e",
+      "name": "Calendar Read",
+      "notes": "CALENDAR TOOL: Reads Google Calendar events for the next 2 weeks. Used by AI agent to check availability."
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "start": "={{ $fromAI(\"start\", \"date and time for when the event should start\") }}",
+        "end": "={{ $fromAI(\"end\", \"date and time for when the event should end\") }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI(\"title\", \"title of the event\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        736
+      ],
+      "id": "7aee4d03-2251-462e-9ecd-90e67d647905",
+      "name": "Calendar Create",
+      "notes": "CALENDAR TOOL: Creates new Google Calendar events for confirmed appointments. Returns calendar_event_id for linking."
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "rimibasic99@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rimibasic99@gmail.com"
+        },
+        "eventId": "={{ $fromAI(\"id\", \"the id of the event\") }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        896,
+        736
+      ],
+      "id": "e80250b7-3595-43b9-af21-ddc0372c495f",
+      "name": "Calendar Delete",
+      "notes": "CALENDAR TOOL: Deletes Google Calendar events when appointments are cancelled."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', `the email address of the user gave you earlier`, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', `the email subjectline that just is [New Booking] + Booking date and time in Riga time`, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', `the email body that contains the message that the booking of the user was confirmed along with booking date, email, name, appointment date and time (Riga time), therapist name, service type, and any special notes`, 'string') }}",
+        "options": {
+          "appendAttribution": false,
+          "bccList": "meliksahin05@gmail.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1024,
+        720
+      ],
+      "id": "f1ab157a-0b07-495c-a448-e8d622c1bb9b",
+      "name": "Gmail Send Confirmation",
+      "webhookId": "80d8ebb0-9f0b-4447-bb04-1431dedb82d5",
+      "disabled": true,
+      "notes": "EMAIL TOOL: Sends confirmation emails to clients after successful appointment booking. Currently disabled."
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1280,
+        704
+      ],
+      "id": "cf82c6aa-0731-4959-8124-02fc3810e150",
+      "name": "Read Rows",
+      "disabled": true,
+      "notes": "SHEETS TOOL (LEGACY): Reads appointment data from Google Sheets main 'Appointments' sheet. Used for client history lookup."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $fromAI(\"email\", \"the email address that the user tells you\") }}",
+            "Appointment Date": "={{ $fromAI(\"appointment_date\", \"the appointment date and time, format: YYYY-MM-DD HH:mm\") }}",
+            "Booking Status": "Confirmed",
+            "Name": "={{ $fromAI(\"name\", \"the client's full name\") }}",
+            "Service Type": "={{ $fromAI(\"service_type\", \"the type of massage or service\") }}",
+            "Therapist Name": "={{ $fromAI(\"therapist_name\", \"the full name of the therapist\") }}",
+            "Notes": "={{ $fromAI(\"notes\", \"any additional notes or topics to discuss\") }}",
+            "Phone": "={{ $fromAI(\"phone\", \"the confirmed phone number, no spaces, no '+' sign\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Status",
+              "displayName": "Booking Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Therapist Name",
+              "displayName": "Therapist Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1392,
+        704
+      ],
+      "id": "c7d7688d-c5ac-44dd-8b6d-823ca2c50205",
+      "name": "Add Rows",
+      "disabled": true,
+      "notes": "SHEETS TOOL (LEGACY): Appends new appointment rows to Google Sheets main 'Appointments' sheet. Part of dual-write strategy."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Appointments",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $fromAI(\"email\", \"the email address that the user tells you\") }}",
+            "Booking Status": "={{ $fromAI(\"status\",\"the status of the appointment which is either confirmed or cancelled\") }}",
+            "Name": "={{ $fromAI(\"name\",\"the name of the user\") }}",
+            "Phone": "={{ $fromAI(\"phone\", \"the phone number that the user tells you or confirms from WhatsApp. Save with country code, no '+' sign, no spaces. Example: 37120123456\") }}",
+            "Therapist Name": "={{ $fromAI(\"therapist_name\", \"the full name of the therapist who will provide the service\") }}",
+            "Service Type": "={{ $fromAI(\"service_type\", \"the type of massage or service\") }}",
+            "Notes": "={{ $fromAI(\"notes\", \"any additional notes or topics to discuss\") }}",
+            "Appointment Date": "={{ $fromAI(\"appointment_date\", \"the appointment date and time in Latvia timezone, format: YYYY-MM-DD HH:mm\") }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Status",
+              "displayName": "Booking Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Therapist Name",
+              "displayName": "Therapist Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1664,
+        704
+      ],
+      "id": "9ed48550-35a2-4099-b122-29c26fdbe66c",
+      "name": "Update Rows",
+      "disabled": true,
+      "notes": "SHEETS TOOL (LEGACY): Updates existing appointment rows in Google Sheets. Matches by email address. Used for cancellations/updates."
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 582121582,
+          "mode": "list",
+          "cachedResultName": "Therapists",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit#gid=582121582"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1152,
+        704
+      ],
+      "id": "59f910a4-541d-4914-bbd6-ef8382624cb7",
+      "name": "Read Therapists",
+      "notesInFlow": false,
+      "disabled": true,
+      "notes": "SHEETS TOOL (LEGACY): Reads therapist list from Google Sheets 'Therapists' sheet. Used to check availability and schedules."
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2496,
+        80
+      ],
+      "id": "96f6a78c-aff0-4b21-a571-a953b0845949",
+      "name": "Send Message By Text",
+      "webhookId": "9c363e8e-3c50-40b5-83e9-d6002d48f4d0",
+      "notes": "OUTPUT: Sends WhatsApp response message to client. Receives AI agent output and forwards to WhatsApp API."
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "=Sorry, I'm experiencing a technical issue right now. 😔 Please try again in a few minutes or contact us directly at +371 25716542",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2496,
+        256
+      ],
+      "id": "b6f4d4c1-6ff3-4265-8c70-1471ef439af2",
+      "name": "Send Error Message",
+      "webhookId": "ab5b929a-69db-485f-b199-2415ed884b70",
+      "notes": "ERROR HANDLING: Sends error message to client when workflow encounters issues. Provides fallback contact information."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk",
+          "mode": "list",
+          "cachedResultName": "Whatsapp AI Agent Appointment Setter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Qu5ur5-fCyW_zegp3ZFVJu-fMBmkL8VXdyrmkE3gNuk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "=Therapist_{{ $fromAI(\"therapist_first_name\", \"ONLY the first name of the assigned therapist. Examples: Lisa, Oliver, Angelina, Natalija\") }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Appointment Date": "={{ $fromAI(\"appointment_date\", \"the appointment date and time, format: YYYY-MM-DD HH:mm\") }}",
+            "Client Name": "={{ $fromAI(\"client_name\", \"the client's full name\") }}",
+            "Client Email": "={{ $fromAI(\"client_email\", \"the client's email address\") }}",
+            "Duration": "60",
+            "Status": "confirmed",
+            "Notes": "={{ $fromAI(\"notes\", \"any additional notes or topics to discuss\") }}",
+            "Client Phone": "={{ $fromAI(\"client_phone\", \"the client's phone number\") }}",
+            "Service Type": "={{ $fromAI(\"service_type\", \"the type of massage or service\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Email",
+              "displayName": "Client Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Client Phone",
+              "displayName": "Client Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Type",
+              "displayName": "Service Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration",
+              "displayName": "Duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1536,
+        704
+      ],
+      "id": "fe85d4a7-6c90-4244-8d01-dcc65086acf2",
+      "name": "Write to Therapist Sheet",
+      "disabled": true,
+      "notes": "SHEETS TOOL (LEGACY): Writes appointments to therapist-specific sheets (e.g., 'Therapist_Lisa'). Part of dual-write strategy."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are the main conversation orchestrator for a spa center appointment booking system. Your role is to manage natural conversations with clients and coordinate specialized AI agents for technical operations.\n\n---\n\n### TODAY'S INFORMATION (Riga timezone):\n- Date: {{ $now.toFormat('MMMM d, yyyy') }}\n- Day of week: {{ $now.toFormat('cccc') }} ← THIS IS TODAY\n- Time: {{ $now.toFormat('HH:mm') }}\n\nCRITICAL: Today is {{ $now.toFormat('cccc') }}. Use this as your reference for all day-of-week calculations. DO NOT try to calculate what day of week a date is - this information is provided above.\n\n---\n\n### YOUR SUB-AGENTS (Available as Tools):\n\nYou now have **4 specialized AI agents** to help you:\n\n**1. Sheets Agent** - Google Sheets operations\n   - Call when you need: therapist list, client history, or to **save/update/query bookings in Google Sheets (legacy system).**\n   - Examples: \"Get active therapist list\", \"Check appointments for email@example.com in Sheets\", \"Add new appointment to Sheets\"\n\n**2. Supabase Agent** - Supabase Database operations\n   - Call when you need: to **save/update/query bookings in Supabase (primary system).**\n   - Examples: \"Get client history from Supabase\", \"Insert new appointment into Supabase\", \"Update appointment status in Supabase\"\n\n**3. Calendar Agent** - Google Calendar operations\n   - Call when you need: available slots, event creation, conflict checks, or event deletion\n   - Examples: \"Create event for Friday 2pm\", \"Check availability for Lisa on Oct 31\", \"Delete event\"\n\n**4. Gmail Agent** - Email operations\n   - Call when you need: to send confirmation emails\n   - Examples: \"Send confirmation email to client\"\n\n---\n\n### CRITICAL INSTRUCTION:\n\n**NEVER perform data operations yourself!**\n- Do NOT directly interact with Google Sheets, Supabase, Google Calendar, or Gmail.\n- **ALWAYS delegate these tasks to the appropriate sub-agent.**\n- For a new booking, you must update the **Calendar**, the **Supabase Agent**, the **Sheets Agent (main)**, and the **Sheets Agent (therapist)**.\n\n---\n\n## APPOINTMENT BOOKING WORKFLOW:\n\n### **Phase 1: Initial Contact**\n- Welcome greeting in client's language\n- Ask if they'd like to schedule an appointment\n\n---\n\n### **Phase 2: Therapist Preference**\n- Ask if they have a preferred therapist\n- If needed, call **Sheets Agent** to get therapist list\n- If client requests specific therapist, note it for later\n- Store therapist preference in conversation memory\n\n---\n\n### **Phase 3: Date and Time Selection** ← THIS COMES FIRST!\n\n**CRITICAL: Ask for date/time BEFORE collecting personal information!**\n\n**Ask client:** \"When would you like your appointment? You can tell me a specific day (like 'Friday' or 'tomorrow') and time (like '2 PM'), or just a day and I'll show you available times.\"\n\n**STEP 1: Understand Client's Request**\n\n**Today's reference (use this, don't calculate!):**\n- Today is {{ $now.toFormat('cccc, MMMM d, yyyy') }}\n- Current time: {{ $now.toFormat('HH:mm') }}\n\n**When client specifies a day of week (Pazartesi, Monday, Salı, Montag, etc.):**\n\n1. **Identify the day they want:**\n   - Map Turkish/Russian/German → English day name\n   - Examples: \"Cuma\" = Friday, \"Çarşamba\" = Wednesday, \"Salı\" = Tuesday\n\n2. **Calculate next occurrence from TODAY ({{ $now.toFormat('cccc') }}):**\n   - If client says SAME day as today → Next week's occurrence (7 days ahead)\n   - If client says DIFFERENT day → Find next occurrence within 7 days\n   \n3. **Verify your calculation:**\n   - State the full date and confirm with client if needed\n\n**When client specifies both day and date or only a date:**\n- Accept as-is and proceed, calculating the day of the week for verification.\n\n**STEP 2: Check if Client Specified a SPECIFIC TIME**\n\n**SCENARIO A: Client specifies SPECIFIC TIME**\n1. Acknowledge: \"Let me check if [day], [date] at [time] is available...\"\n2. Call **Sheets Agent**: \"Get active therapist list with schedules for [day]\"\n3. Identify therapists available at that specific time (works on that day, time within hours/not break).\n4. Call **Calendar Agent**: \"Check if [therapist/any available] available at [date] [time]\"\n5. **If AVAILABLE:**\n   - Inform client: \"Great! [Therapist] is available on [Day, Date] at [Time].\"\n   - **Store: date, time, therapist in conversation memory**\n   - **Proceed to Phase 4 (Information Collection)**\n6. **If NOT AVAILABLE:**\n   - Inform client: \"Unfortunately, [time] is not available on [date].\"\n   - Call **Calendar Agent**: \"Find 5 slots near [time] on [date] for [therapist/any available]\"\n   - Present alternatives around requested time (±2 hours).\n   - Wait for client selection.\n   - **Store selected: date, time, therapist in conversation memory**\n   - **Proceed to Phase 4**\n\n**SCENARIO B: Client specifies ONLY DAY (no specific time)**\n1. Acknowledge: \"Let me check availability for [Day, Date]...\"\n2. Call **Sheets Agent**: \"Get active therapist list\"\n3. Call **Calendar Agent**: \"Find 5 available slots throughout [date] for [therapist/any available]\"\n4. Present slots naturally in client's language (with therapist name).\n5. Wait for client to select.\n6. **Store selected: date, time, therapist in conversation memory**\n7. **Proceed to Phase 4 (Information Collection)**\n\n---\n\n### **Phase 4: Information Collection** ← THIS COMES AFTER DATE/TIME!\n\n**CRITICAL: Only collect info AFTER date/time is confirmed available!**\n\nCollect sequentially (ONE at a time, wait for response):\n\n**1. Email Address**\n- Ask for email.\n- Call **Sheets Agent** (or **Supabase Agent**) to check previous bookings.\n- If returning client: \"Welcome back!\"\n- Store email in conversation memory.\n\n**2. Full Name**\n- Ask for full name.\n- Store name in conversation memory.\n\n**3. Phone Number**\n- Acknowledge WhatsApp number: {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}\n- Ask for phone number confirmation.\n- Store confirmed phone in conversation memory.\n\n**4. Service Type**\n- Ask: \"What type of massage or service would you like? We offer Swedish massage, Deep tissue massage, Aromatherapy, Hot stone massage, and Reflexology.\"\n- Store service type in conversation memory.\n\n---\n\n### **Phase 5: Booking Confirmation (CRITICAL DUAL-WRITE SYNCHRONIZATION)**\n\nAfter collecting and verifying all information:\n\n**CRITICAL VERIFICATION:** Verify all info is collected and correct before proceeding.\n\n**Execute booking in this ORDER for robust synchronization:**\n\n1.  **Call Calendar Agent:** (Ensures time slot is reserved immediately)\n       - \"Create event: [Service] - [Client Name] - [Therapist], Start: [YYYY-MM-DD HH:mm], Duration: 60 minutes\"\n       - Wait for confirmation (and retrieve the **Calendar Event ID**, store it in memory).\n\n2.  **Call Supabase Agent (Primary Store):** (Write to the modern database)\n       - \"Insert new appointment with: email=[email], name=[name], phone=[phone], service=[service], therapist=[therapist], date=[YYYY-MM-DD HH:mm], **calendar\\_event\\_id=[ID from Step 1]**, status=Confirmed\"\n       - Wait for Supabase confirmation (and retrieve the **Supabase Appointment ID**, store it in memory).\n\n3.  **Call Sheets Agent (Main Sheet - Legacy Store):** (Write to the legacy backup)\n       - \"Add appointment with: email=[email], name=[name], phone=[phone], service=[service], therapist=[therapist], date=[YYYY-MM-DD HH:mm], status=Confirmed, **Supabase ID=[ID from Step 2]**\"\n       - Wait for main sheet confirmation.\n\n4.  **Call Sheets Agent (Therapist Sheet) ONCE:** (Write to the therapist-specific sheet)\n       - \"Write to therapist sheet: therapist=[first name only], client=[name], email=[email], phone=[phone], service=[service], date=[YYYY-MM-DD HH:mm]\"\n       - Wait for therapist sheet confirmation.\n\n5.  **Call Gmail Agent:**\n       - \"Send confirmation email: language=[client's language], email=[email], name=[name], date=[date], time=[time], day=[day of week], therapist=[therapist], service=[service], phone=[phone]\"\n       - Wait for email confirmation.\n\n6.  **Confirm to client:**\n       - \"Your appointment is confirmed! 🎉\"\n       - Include: day name, date, time, therapist, service in client's language.\n\n---\n\n### **Phase 6: Cancellation/Reschedule (CRITICAL DUAL-WRITE UPDATE)**\n\nIf client wants to cancel or reschedule:\n\n**Step 1: Find Appointment**\n- Call **Supabase Agent**: \"Get active appointments for email=[client's email] from Supabase\"\n- (Optional Fallback: If Supabase returns nothing, call **Sheets Agent**: \"Get appointments for email=[client's email] from Sheets\")\n- Display their bookings and ask which one to cancel/reschedule.\n\n**Step 2: For Cancellation**\n- **CRITICAL:** Use the Supabase ID and Calendar Event ID associated with the booking.\n- Call **Supabase Agent**: \"Update appointment status to **Cancelled** for Supabase ID=[ID] and update linked Calendar Event status to cancelled.\"\n- Call **Sheets Agent**: \"Update appointment status to **Cancelled** for email=[email] and date=[date] in Sheets.\"\n- Call **Calendar Agent**: \"Delete event for [details] using Calendar Event ID.\"\n- Confirm cancellation to client.\n\n**Step 3: For Reschedule**\n- First cancel old appointment (Step 2 - Dual-write cancel)\n- Then create new appointment (Phase 1-5 - Dual-write create)\n\n---\n\n## LANGUAGE ADAPTATION:\n\n**CRITICAL: Mirror client's language throughout the entire interaction.**\n- Turkish client → Respond in Turkish\n- English client → Respond in English  \n- Russian client → Respond in Russian\n- German client → Respond in German\n\n---\n\n## COMMUNICATION STYLE:\n\n- Professional yet warm tone\n- Natural conversational language\n- Ask ONE question per message\n- Be patient and helpful\n\n---\n\n## CRITICAL REMINDERS:\n\n✅ Today is {{ $now.toFormat('cccc, MMMM d') }} - use this as your starting point\n✅ **Dual-Write Logic:** For creation/cancellation, you MUST update the **Calendar Agent**, **Supabase Agent**, and **Sheets Agent** (main and therapist) to maintain sync.\n✅ **Data Linkage:** Use the **Calendar Event ID** and **Supabase Appointment ID** to link records across systems.\n✅ Ask for DATE/TIME FIRST (Phase 3), then collect personal info (Phase 4)\n✅ Only proceed to info collection AFTER confirming availability\n✅ Call sub-agents for ALL technical operations\n✅ Never directly use tools - always through sub-agents\n✅ Collect information sequentially, one item at a time\n✅ Store all info in conversation memory\n✅ Wait for sub-agent confirmations before proceeding\n✅ Use client's language throughout"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        272
+      ],
+      "id": "01dd33d3-6ce4-4a72-882e-117f233ba95f",
+      "name": "Main Agent",
+      "onError": "continueErrorOutput",
+      "notes": "AI AGENT: Google Gemini-powered conversational AI that orchestrates appointment booking. Uses tools (Calendar, Supabase, Sheets, Gmail) to perform operations. Handles multi-language conversations and dual-write synchronization."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "therapists",
+        "returnAll": true,
+        "options": {
+          "filter": {
+            "filters": [
+              {
+                "keyName": "status",
+                "condition": "equal",
+                "keyValue": "Aktif"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        688
+      ],
+      "id": "c05f5725-a718-4cf3-a75e-bc85d6a82b9e",
+      "name": "tool_get_therapists",
+      "credentials": {
+        "supabaseApi": {
+          "id": "esM0uTGsBmuQOXzo",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": false,
+      "notes": "SUPABASE TOOL: Retrieves active therapists (status='Aktif') from Supabase 'therapists' table. Used by AI agent to check availability and schedules. Returns therapist details including working hours, working days, and break times."
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "appointments",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $('WhatsApp Trigger').item ? 'whatsapp' : 'telegram' }}"
+            },
+            {
+              "fieldId": "appointment_datetime",
+              "fieldValue": "={{ $fromAI(\"appointment_date\", \"the appointment date and time, format: YYYY-MM-DD HH:mm\") }}"
+            },
+            {
+              "fieldId": "scheduled_at",
+              "fieldValue": "={{ $fromAI(\"appointment_date\", \"the appointment date and time, format: YYYY-MM-DD HH:mm\") }}"
+            },
+            {
+              "fieldId": "client_name",
+              "fieldValue": "={{ $fromAI(\"name\", \"the client's full name\") }}"
+            },
+            {
+              "fieldId": "client_phone",
+              "fieldValue": "={{ $fromAI(\"phone\", \"the confirmed phone number, no spaces, no '+' sign\") }}"
+            },
+            {
+              "fieldId": "client_email",
+              "fieldValue": "={{ $fromAI(\"email\", \"the client's email address\") }}"
+            },
+            {
+              "fieldId": "therapist_name",
+              "fieldValue": "={{ $fromAI(\"therapist_name\", \"the name of the therapist\") }}"
+            },
+            {
+              "fieldId": "service_type",
+              "fieldValue": "={{ $fromAI(\"service_type\", \"the type of service\") }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Confirmed"
+            },
+            {
+              "fieldId": "notes",
+              "fieldValue": "={{ $fromAI(\"notes\", \"any additional notes\") }}"
+            },
+            {
+              "fieldId": "calendar_event_id",
+              "fieldValue": "={{ $fromAI(\"calendar_event_id\", \"the calendar event ID from Calendar Create tool\") }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        688
+      ],
+      "id": "ca05c053-292f-45a5-97c6-334d164a2886",
+      "name": "tool_create_appointment",
+      "credentials": {
+        "supabaseApi": {
+          "id": "esM0uTGsBmuQOXzo",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": false,
+      "notes": "SUPABASE TOOL: Creates new appointment records in Supabase 'appointments' table. Includes all required fields: appointment_datetime, source (whatsapp/telegram), calendar_event_id, status (Confirmed), and client/therapist details. Returns appointment ID for linking."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "appointments",
+        "returnAll": true,
+        "options": {
+          "filter": {
+            "filters": [
+              {
+                "keyName": "status",
+                "condition": "equal",
+                "keyValue": "Confirmed"
+              },
+              {
+                "keyName": "appointment_datetime",
+                "condition": "gte",
+                "keyValue": "={{ $now }}"
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        688
+      ],
+      "id": "37acc96c-73dc-44cd-9401-423799a6c162",
+      "name": "tool_check_appointments",
+      "credentials": {
+        "supabaseApi": {
+          "id": "esM0uTGsBmuQOXzo",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": false,
+      "notes": "SUPABASE TOOL: Retrieves confirmed future appointments from Supabase. Used to check client history, find existing bookings, and detect scheduling conflicts. Filters by status='Confirmed' and appointment_datetime >= now()."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "appointments",
+        "id": "={{ $fromAI(\"appointment_id\", \"the Supabase appointment ID to update\") }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "Cancelled"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        2384,
+        704
+      ],
+      "id": "e3aa1888-3bb2-414b-a048-5f7563ad982e",
+      "name": "tool_update_appointment",
+      "credentials": {
+        "supabaseApi": {
+          "id": "esM0uTGsBmuQOXzo",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": false,
+      "notes": "SUPABASE TOOL: Updates appointment status to 'Cancelled' in Supabase. Uses appointment ID (not email) for reliable matching. Called during cancellation workflow. Status must be 'Cancelled' (capitalized) to match database constraint."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        208,
+        592
+      ],
+      "id": "c5ca258b-773b-4c06-be69-410d61bb0827",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "bthPcc0SQgICNCxH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        384
+      ],
+      "id": "c6ce83d9-fcc7-4b5f-a0b9-d9471befd945",
+      "name": "Telegram Trigger",
+      "webhookId": "05a0d0c3-d5f0-4b91-bd80-c845231b5233",
+      "notes": "TRIGGER: Receives incoming Telegram messages. Routes to Message Router for processing (same flow as WhatsApp).",
+      "credentials": {
+        "telegramApi": {
+          "id": "4axJ6BrpPvRyNLI7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2496,
+        -64
+      ],
+      "id": "e80ac2bd-de1f-4c3c-8640-f42337345e42",
+      "name": "Send a text message",
+      "webhookId": "41d50bba-ec6e-48ec-b76d-7d0ad0631ec3",
+      "notes": "OUTPUT: Sends Telegram response message to client. Receives AI agent output and forwards to Telegram API.",
+      "credentials": {
+        "telegramApi": {
+          "id": "4axJ6BrpPvRyNLI7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2496,
+        416
+      ],
+      "id": "6afa3e8b-a264-49ab-a68c-b4085030e1e4",
+      "name": "Send an error message",
+      "webhookId": "cff0d17e-700d-4a1b-94a9-e2f25320a2a2",
+      "notes": "ERROR HANDLING: Sends error message to Telegram client when workflow encounters issues.",
+      "credentials": {
+        "telegramApi": {
+          "id": "4axJ6BrpPvRyNLI7",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Add a if else action to determine whether theres a new appointment or cancelation or a change depending on that hit supabase\n",
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2752,
+        128
+      ],
+      "id": "ae78c5cd-6831-427b-a8cc-8de9cb1f6682",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "FInd a way to add calendar api to website so that we wouldn't waste time here.\n"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        1008
+      ],
+      "id": "8a0e8c49-26b1-478b-80a4-83b20dc48bc2",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Router": {
+      "main": [
+        [
+          {
+            "node": "Get Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Audio Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Prompt": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Prompt": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Read": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Create": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Delete": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Send Confirmation": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Therapists": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Therapist Sheet": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Message By Text",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tool_get_therapists": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tool_create_appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tool_check_appointments": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tool_update_appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a4f66d19-dcab-4c72-ba1f-e3440ad1b805",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "42c27a9072b0419597eaac24c015174ae1f6794ea35d53dff48f4db668ae23a9"
+  },
+  "id": "delcOipZlppFQ2w8",
+  "tags": []
+}
