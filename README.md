@@ -18,7 +18,11 @@ A React + TypeScript + Vite frontend dashboard for an n8n AI agent phone analyti
 
 2. **Set up Supabase:**
    - Create a Supabase project at https://app.supabase.com
-   - Create database tables using your SQL schema
+   - Run the database migrations in order:
+     1. `COMPLETE_DATABASE_SCHEMA.sql` - Base schema
+     2. `MULTI_TENANT_SCHEMA.sql` - Multi-tenant setup
+     3. `MIGRATE_TO_MULTI_TENANT.sql` - Data migration
+     4. `FINAL_MULTI_TENANT_MIGRATION.sql` - Final optimizations
    - Get your API credentials (Project URL and anon key)
 
 3. **Configure environment variables:**
@@ -37,12 +41,10 @@ A React + TypeScript + Vite frontend dashboard for an n8n AI agent phone analyti
 5. **Open your browser:**
    Navigate to `http://localhost:5173` (or the port shown in terminal)
 
-### 📖 Full Setup Guide
+### 📖 Documentation
 
-For detailed step-by-step instructions, see:
-- **[QUICK_START.md](./QUICK_START.md)** - Complete setup and deployment guide
-- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Detailed deployment instructions
-- **[DATABASE_REQUIREMENTS.md](./DATABASE_REQUIREMENTS.md)** - Database schema and data requirements
+For detailed multi-tenant setup and database migration instructions, see:
+- **[MULTI_TENANT_IMPLEMENTATION_GUIDE.md](./MULTI_TENANT_IMPLEMENTATION_GUIDE.md)** - Complete multi-tenant implementation guide with migration steps
 
 ### Build for Production
 

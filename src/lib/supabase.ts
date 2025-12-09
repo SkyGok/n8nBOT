@@ -87,6 +87,7 @@ export interface Database {
           user_id: string | null;
           customer_id: string | null;
           call_type: 'inbound' | 'outbound';
+          tenant_id: string;
         };
         Insert: {
           id?: string;
@@ -102,6 +103,7 @@ export interface Database {
           user_id?: string | null;
           customer_id?: string | null;
           call_type: 'inbound' | 'outbound';
+          tenant_id?: string; // Auto-set from JWT if not provided
         };
         Update: {
           id?: string;
@@ -116,6 +118,7 @@ export interface Database {
           user_id?: string | null;
           customer_id?: string | null;
           call_type?: 'inbound' | 'outbound';
+          tenant_id?: string;
         };
       };
       appointments: {
@@ -131,6 +134,7 @@ export interface Database {
           calendar_event_id: string | null;
           metadata: Record<string, unknown>;
           updated_at: string;
+          tenant_id: string;
           // AI Agent direct columns
           appointment_datetime: string | null;
           client_name: string | null;
@@ -152,6 +156,7 @@ export interface Database {
           calendar_event_id?: string | null;
           metadata?: Record<string, unknown>;
           updated_at?: string;
+          tenant_id?: string; // Auto-set from JWT if not provided
           // AI Agent direct columns
           appointment_datetime?: string | null;
           client_name?: string | null;
@@ -172,6 +177,7 @@ export interface Database {
           calendar_event_id?: string | null;
           metadata?: Record<string, unknown>;
           updated_at?: string;
+          tenant_id?: string;
           // AI Agent direct columns
           appointment_datetime?: string | null;
           client_name?: string | null;
@@ -187,6 +193,7 @@ export interface Database {
           id: number;
           metric_date: string;
           user_id: string | null;
+          tenant_id: string;
           appointments_via_agent: number;
           whatsapp_conversations: number;
           whatsapp_appointments: number;
@@ -197,6 +204,7 @@ export interface Database {
           id?: number;
           metric_date: string;
           user_id?: string | null;
+          tenant_id?: string; // Auto-set from JWT if not provided
           appointments_via_agent: number;
           whatsapp_conversations: number;
           whatsapp_appointments: number;
@@ -207,6 +215,7 @@ export interface Database {
           id?: number;
           metric_date?: string;
           user_id?: string | null;
+          tenant_id?: string;
           appointments_via_agent?: number;
           whatsapp_conversations?: number;
           whatsapp_appointments?: number;
@@ -221,6 +230,7 @@ export interface Database {
           timestamp: string;
           value: number;
           user_id: string | null;
+          tenant_id: string;
           metadata: Record<string, unknown>;
         };
         Insert: {
@@ -229,6 +239,7 @@ export interface Database {
           timestamp: string;
           value: number;
           user_id?: string | null;
+          tenant_id?: string; // Auto-set from JWT if not provided
           metadata?: Record<string, unknown>;
         };
         Update: {
@@ -237,6 +248,7 @@ export interface Database {
           timestamp?: string;
           value?: number;
           user_id?: string | null;
+          tenant_id?: string;
           metadata?: Record<string, unknown>;
         };
       };
@@ -245,6 +257,7 @@ export interface Database {
           id: number;
           period: string;
           user_id: string | null;
+          tenant_id: string;
           answered: number;
           missed: number;
           other: number;
@@ -254,6 +267,7 @@ export interface Database {
           id?: number;
           period: string;
           user_id?: string | null;
+          tenant_id?: string; // Auto-set from JWT if not provided
           answered: number;
           missed: number;
           other: number;
@@ -263,6 +277,7 @@ export interface Database {
           id?: number;
           period?: string;
           user_id?: string | null;
+          tenant_id?: string;
           answered?: number;
           missed?: number;
           other?: number;
@@ -349,6 +364,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string | null;
+          tenant_id: string;
           conversation_id: string;
           message_id: string;
           phone_number: string;
@@ -367,6 +383,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id?: string | null;
+          tenant_id?: string; // Auto-set from JWT if not provided
           conversation_id: string;
           message_id: string;
           phone_number: string;
@@ -385,6 +402,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string | null;
+          tenant_id?: string;
           conversation_id?: string;
           message_id?: string;
           phone_number?: string;
@@ -404,6 +422,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string | null;
+          tenant_id: string;
           phone_number: string;
           email: string | null;
           full_name: string | null;
@@ -417,6 +436,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id?: string | null;
+          tenant_id?: string; // Auto-set from JWT if not provided
           phone_number: string;
           email?: string | null;
           full_name?: string | null;
@@ -430,6 +450,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string | null;
+          tenant_id?: string;
           phone_number?: string;
           email?: string | null;
           full_name?: string | null;
@@ -438,6 +459,62 @@ export interface Database {
           tags?: string[] | null;
           metadata?: Record<string, unknown>;
           updated_at?: string;
+        };
+      };
+      therapists: {
+        Row: {
+          id: string;
+          first_name: string;
+          last_name: string;
+          full_name: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          status: 'Aktif' | 'Pasif';
+          working_days: string[] | null;
+          working_hours_start: string | null;
+          working_hours_end: string | null;
+          break_start: string | null;
+          break_end: string | null;
+          working_hours: string | null;
+          break_times: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+          tenant_id: string;
+        };
+        Insert: {
+          id?: string;
+          first_name: string;
+          last_name: string;
+          email?: string | null;
+          phone?: string | null;
+          status?: 'Aktif' | 'Pasif';
+          working_days?: string[] | null;
+          working_hours_start?: string | null;
+          working_hours_end?: string | null;
+          break_start?: string | null;
+          break_end?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          tenant_id?: string; // Auto-set from JWT if not provided
+        };
+        Update: {
+          id?: string;
+          first_name?: string;
+          last_name?: string;
+          email?: string | null;
+          phone?: string | null;
+          status?: 'Aktif' | 'Pasif';
+          working_days?: string[] | null;
+          working_hours_start?: string | null;
+          working_hours_end?: string | null;
+          break_start?: string | null;
+          break_end?: string | null;
+          notes?: string | null;
+          updated_at?: string;
+          tenant_id?: string;
         };
       };
       projects: {

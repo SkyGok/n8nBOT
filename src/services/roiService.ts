@@ -1,9 +1,10 @@
 /**
  * ROI Service
  * Functions to fetch appointment data from Supabase for ROI calculations
+ * All queries use tenant-scoped Supabase client for automatic tenant isolation
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, getTenantSupabase } from '@/lib/supabase';
 import { startOfDay, endOfDay } from 'date-fns';
 
 export interface AppointmentFilters {
@@ -17,9 +18,11 @@ export interface AppointmentFilters {
  */
 export async function fetchAppointmentCount(filters?: AppointmentFilters): Promise<number> {
   try {
-    // For demo: No user_id filtering - show all appointments
+    // Use tenant-scoped client for automatic tenant isolation
+    const tenantSupabase = getTenantSupabase();
+    
     // Fetch all appointments and filter by date in JavaScript for better reliability
-    const { data: allAppointments, error } = await supabase
+    const { data: allAppointments, error } = await tenantSupabase
       .from('appointments')
       .select('id, appointment_datetime, scheduled_at, created_at');
 

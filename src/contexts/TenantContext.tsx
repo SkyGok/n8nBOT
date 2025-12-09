@@ -129,6 +129,9 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
+      // Note: RLS policies use get_user_tenant_id() function which queries tenant_users table
+      // This is more reliable than JWT claims and works with Supabase's standard auth flow
+
       setTenantSupabase(tenantClient);
       setTenantSupabaseClient(tenantClient); // ✅ Register with supabase.ts for getTenantSupabase()
 

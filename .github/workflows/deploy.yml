@@ -68,6 +68,17 @@ jobs:
             echo "❌ ERROR: dist/index.html not found!"
             exit 1
           fi
+          # Ensure .nojekyll exists in dist
+          if [ ! -f "dist/.nojekyll" ]; then
+            echo "Creating .nojekyll file in dist..."
+            touch dist/.nojekyll
+          fi
+          # Check if paths in index.html use correct base path
+          if grep -q "/n8nBOT/" dist/index.html; then
+            echo "✅ Build output uses correct base path (/n8nBOT/)"
+          else
+            echo "⚠️  WARNING: Build output may not use correct base path!"
+          fi
           # Check if Supabase URL is in the built JS (without exposing the actual URL)
           if grep -q "placeholder.supabase.co" dist/assets/*.js 2>/dev/null; then
             echo "⚠️  WARNING: Placeholder Supabase URL found in build - environment variables may not be set correctly!"

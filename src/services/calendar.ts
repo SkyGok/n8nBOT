@@ -5,7 +5,7 @@
  */
 
 import { CalendarEvent, CreateCalendarEventInput } from '@/types/calendar';
-import { supabase } from '@/lib/supabase';
+import { supabase, getTenantSupabase } from '@/lib/supabase';
 
 const CALENDAR_STORAGE_KEY = 'calendar_events';
 const POLL_INTERVAL = 30000; // 30 seconds
@@ -46,8 +46,11 @@ export async function fetchCalendarEvents(
   // Try Supabase first
   if (isSupabaseAvailable()) {
     try {
+      // Use tenant-scoped client for automatic tenant isolation
+      const tenantSupabase = getTenantSupabase();
+      
       // Fetch calendar_events
-      const { data: calendarEvents, error: calendarError } = await supabase
+      const { data: calendarEvents, error: calendarError } = await tenantSupabase
         .from('calendar_events')
         .select('*')
         .gte('start_time', startDate.toISOString())
@@ -56,7 +59,7 @@ export async function fetchCalendarEvents(
 
       // Fetch confirmed appointments and filter by date range in JavaScript
       // This ensures we get all appointments that might fall within the range
-      const { data: allAppointments, error: appointmentsError } = await supabase
+      const { data: allAppointments, error: appointmentsError } = await tenantSupabase
         .from('appointments')
         .select('*')
         .eq('status', 'Confirmed');
@@ -251,6 +254,9 @@ export async function createCalendarEvent(
   // Try Supabase first
   if (isSupabaseAvailable()) {
     try {
+      // Use tenant-scoped client for automatic tenant isolation
+      const tenantSupabase = getTenantSupabase();
+      
       // Get current user ID
       const userId = await getCurrentUserId();
       
@@ -289,7 +295,7 @@ export async function createCalendarEvent(
         insertData.user_id = userId;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await tenantSupabase
         .from('calendar_events')
         .insert(insertData)
         .select()
@@ -398,6 +404,9 @@ export async function updateCalendarEvent(
   // Try Supabase first
   if (isSupabaseAvailable()) {
     try {
+      // Use tenant-scoped client for automatic tenant isolation
+      const tenantSupabase = getTenantSupabase();
+      
       const updateData: any = {};
       if (updates.title !== undefined) updateData.title = updates.title;
       if (updates.description !== undefined) updateData.description = updates.description || null;
@@ -422,7 +431,7 @@ export async function updateCalendarEvent(
       // Update synced_at when event is modified
       updateData.synced_at = new Date().toISOString();
 
-      const { data, error } = await supabase
+      const { data, error } = await tenantSupabase
         .from('calendar_events')
         .update(updateData)
         .eq('id', eventId)
@@ -531,7 +540,10 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
   // Try Supabase first
   if (isSupabaseAvailable()) {
     try {
-      const { error } = await supabase
+      // Use tenant-scoped client for automatic tenant isolation
+      const tenantSupabase = getTenantSupabase();
+      
+      const { error } = await tenantSupabase
         .from('calendar_events')
         .delete()
         .eq('id', eventId);
@@ -710,11 +722,13 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
   if (!isSupabaseAvailable()) return;
 
   try {
+    // Use tenant-scoped client for automatic tenant isolation
+    const tenantSupabase = getTenantSupabase();
     const userId = await getCurrentUserId();
     const googleEventId = event.metadata?.google_event_id as string || generateGoogleEventId();
     
     // Check if event exists
-    const { data: existing } = await supabase
+    const { data: existing } = await tenantSupabase
       .from('calendar_events')
       .select('id')
       .eq('id', event.id)
@@ -739,7 +753,7 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
     if (existing) {
       // Update existing event
       eventData.updated_at = new Date().toISOString();
-      await supabase
+      await tenantSupabase
         .from('calendar_events')
         .update(eventData)
         .eq('id', event.id);
@@ -747,7 +761,7 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
       // Insert new event
       eventData.id = event.id;
       eventData.google_event_id = googleEventId;
-      await supabase
+      await tenantSupabase
         .from('calendar_events')
         .insert(eventData);
     }
@@ -764,6 +778,8 @@ async function syncEventsToSupabase(events: CalendarEvent[]): Promise<void> {
   if (!isSupabaseAvailable() || events.length === 0) return;
 
   try {
+    // Use tenant-scoped client for automatic tenant isolation
+    const tenantSupabase = getTenantSupabase();
     const userId = await getCurrentUserId();
     
     // Upsert all events
@@ -784,7 +800,7 @@ async function syncEventsToSupabase(events: CalendarEvent[]): Promise<void> {
     }));
 
     // Use upsert to handle both insert and update
-    await supabase
+    await tenantSupabase
       .from('calendar_events')
       .upsert(eventsToUpsert, { onConflict: 'id' });
   } catch (error) {

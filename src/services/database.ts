@@ -1,9 +1,10 @@
 /**
  * Database service functions
  * Queries Supabase database and transforms data to match frontend types
+ * All queries use tenant-scoped Supabase client for automatic tenant isolation
  */
 
-import { supabase } from '@/lib/supabase';
+import { getTenantSupabase } from '@/lib/supabase';
 import { SummaryStats, TimeSeriesResponse, EventsResponse, EngagementMetrics, PhoneEvent, TimeSeriesDataPoint } from '@/types/api';
 import { formatISO, startOfDay, endOfDay, subDays, subMonths, startOfMonth } from 'date-fns';
 
@@ -12,6 +13,9 @@ import { formatISO, startOfDay, endOfDay, subDays, subMonths, startOfMonth } fro
  * Optionally filter by date range
  */
 export async function fetchSummaryStats(startDate?: Date, endDate?: Date): Promise<SummaryStats> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   // Build query
   let query = supabase
     .from('calls')
@@ -83,6 +87,9 @@ export async function fetchTimeSeriesData(
   metric: 'calls' | 'duration' | 'answered_rate' = 'calls',
   period: 'hour' | 'day' | 'week' | 'month' = 'day'
 ): Promise<TimeSeriesResponse> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   let startDate: Date;
   let endDate = new Date();
 
@@ -152,6 +159,9 @@ async function calculateTimeSeriesFromCalls(
   startDate: Date,
   endDate: Date
 ): Promise<TimeSeriesResponse> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   const { data: calls, error } = await supabase
     .from('calls')
     .select('timestamp, status, duration_seconds')
@@ -232,7 +242,9 @@ export async function fetchEvents(
   pageSize: number = 50,
   filters?: { status?: string; direction?: string }
 ): Promise<EventsResponse> {
-  // For demo: No user_id filtering - show all calls
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   let query = supabase
     .from('calls')
     .select('*', { count: 'exact' });
@@ -285,6 +297,9 @@ export async function fetchEvents(
  * If engagement_metrics table is empty, calculate from actual data
  */
 export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   // Get today's metrics
   const today = formatISO(startOfDay(new Date())).split('T')[0];
   const todayStart = startOfDay(new Date()).toISOString();
@@ -389,6 +404,9 @@ export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
  * This can be calculated from unique phone numbers or a separate customers table
  */
 export async function getTotalCustomers(): Promise<number> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   // Get unique phone numbers count
   const { data: uniquePhones, error: uniqueError } = await supabase
     .from('calls')
@@ -438,6 +456,9 @@ export interface WhatsAppConversation {
  * Fetch WhatsApp messages grouped by conversation
  */
 export async function fetchWhatsAppConversations(): Promise<WhatsAppConversation[]> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   // Fetch all WhatsApp messages, ordered by timestamp
   const { data: messages, error } = await supabase
     .from('whatsapp_messages')
@@ -525,6 +546,9 @@ export async function fetchWhatsAppConversations(): Promise<WhatsAppConversation
  * Fetch messages for a specific conversation
  */
 export async function fetchConversationMessages(conversationId: string): Promise<WhatsAppMessage[]> {
+  // Use tenant-scoped client for automatic tenant isolation
+  const supabase = getTenantSupabase();
+  
   const { data: messages, error } = await supabase
     .from('whatsapp_messages')
     .select('*')

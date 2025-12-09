@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // Redirect to the correct base path
+    const basePath = '/n8nBOT';
+    const currentPath = window.location.pathname;
+    
+    // If already at base path, try to load the app
+    if (currentPath.startsWith(basePath)) {
+      // Try to load the app
+      window.location.href = basePath + '/';
+    } else {
+      // Redirect to base path
+      window.location.href = basePath + currentPath;
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting to <a href="/n8nBOT/">/n8nBOT/</a>...</p>
+</body>
+</html>
+
