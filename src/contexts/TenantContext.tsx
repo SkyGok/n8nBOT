@@ -67,14 +67,14 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Check if user is admin or owner (by checking tenant_users)
-      const { data: userTenantRoles } = await supabase
+      const { data: userTenantRoles, error: rolesError } = await supabase
         .from('tenant_users')
         .select('role')
         .eq('user_id', user.id);
 
       // Distinguish between admin (general admin) and owner (tenant owner)
-      const userIsAdmin = userTenantRoles?.some(tu => tu.role === 'admin') || false;
-      const userIsOwner = userTenantRoles?.some(tu => tu.role === 'owner') || false;
+      const userIsAdmin = (userTenantRoles && Array.isArray(userTenantRoles) && userTenantRoles.some((tu: { role: string }) => tu.role === 'admin')) || false;
+      const userIsOwner = (userTenantRoles && Array.isArray(userTenantRoles) && userTenantRoles.some((tu: { role: string }) => tu.role === 'owner')) || false;
       setIsAdmin(userIsAdmin);
       setIsOwner(userIsOwner);
 
@@ -120,14 +120,27 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           throw new Error(`Failed to load tenant: ${tenantError.message}`);
         }
 
-        if (!tenantUsers || tenantUsers.length === 0) {
+        if (!tenantUsers || !Array.isArray(tenantUsers) || tenantUsers.length === 0) {
           throw new Error('No tenant found for user. Please contact support.');
         }
 
+        // Type assertion for tenant_users query result
+        type TenantUserResult = {
+          tenant_id: string;
+          role: string;
+          tenants: any;
+        };
+
+        const typedTenantUsers = tenantUsers as TenantUserResult[];
+
         // Get the first tenant (or the specified one)
         const tenantUser = tenantId 
-          ? tenantUsers.find(tu => tu.tenant_id === tenantId) || tenantUsers[0]
-          : tenantUsers[0];
+          ? typedTenantUsers.find((tu: TenantUserResult) => tu.tenant_id === tenantId) || typedTenantUsers[0]
+          : typedTenantUsers[0];
+        
+        if (!tenantUser) {
+          throw new Error('No tenant found for user. Please contact support.');
+        }
         
         tenantData = tenantUser.tenants as any;
         
@@ -314,9 +327,21 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Type assertion for tenant_users query result
+      type TenantUserWithTenant = {
+        tenant_id: string;
+        role: string;
+        tenants: {
+          id: string;
+          name: string;
+        } | null;
+      };
+
+      const typedTenantUsers = (tenantUsers as TenantUserWithTenant[]) || [];
+
       // Check if user is admin (has admin role) or owner (has owner role)
-      const userIsAdmin = tenantUsers && tenantUsers.some((tu: any) => tu.role === 'admin');
-      const userIsOwner = tenantUsers && tenantUsers.some((tu: any) => tu.role === 'owner');
+      const userIsAdmin = typedTenantUsers.some((tu: TenantUserWithTenant) => tu.role === 'admin');
+      const userIsOwner = typedTenantUsers.some((tu: TenantUserWithTenant) => tu.role === 'owner');
       setIsAdmin(userIsAdmin || false);
       setIsOwner(userIsOwner || false);
 
@@ -330,8 +355,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
         if (!allTenantsError && allTenants) {
           // Map all tenants, preserving role if user is assigned to that tenant
-          const allTenantOptions: TenantOption[] = allTenants.map((t: any) => {
-            const userTenant = tenantUsers?.find((tu: any) => tu.tenant_id === t.id);
+          const allTenantOptions: TenantOption[] = allTenants.map((t: { id: string; name: string }) => {
+            const userTenant = typedTenantUsers.find((tu: TenantUserWithTenant) => tu.tenant_id === t.id);
             return {
               id: t.id,
               name: t.name,
@@ -342,8 +367,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         } else if (allTenantsError) {
           console.error('[TenantContext] Error loading all tenants for admin:', allTenantsError);
           // Fallback to user's assigned tenants
-          if (tenantUsers && tenantUsers.length > 0) {
-            const tenants: TenantOption[] = tenantUsers.map((tu: any) => ({
+          if (typedTenantUsers.length > 0) {
+            const tenants: TenantOption[] = typedTenantUsers.map((tu: TenantUserWithTenant) => ({
               id: tu.tenant_id,
               name: tu.tenants?.name || 'Unknown',
               role: tu.role,
@@ -353,8 +378,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Regular user - only show their assigned tenants
-        if (tenantUsers && tenantUsers.length > 0) {
-          const tenants: TenantOption[] = tenantUsers.map((tu: any) => ({
+        if (typedTenantUsers.length > 0) {
+          const tenants: TenantOption[] = typedTenantUsers.map((tu: TenantUserWithTenant) => ({
             id: tu.tenant_id,
             name: tu.tenants?.name || 'Unknown',
             role: tu.role,

@@ -16,7 +16,7 @@ interface AdminRouteProps {
 export function AdminRoute({ children }: AdminRouteProps) {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const { tenant, loading: tenantLoading } = useTenant();
+  const { loading: tenantLoading } = useTenant();
   const location = useLocation();
 
   useEffect(() => {
@@ -45,8 +45,15 @@ export function AdminRoute({ children }: AdminRouteProps) {
       return;
     }
 
+    // Type assertion for tenant_users query result
+    type TenantUserRole = {
+      role: string;
+    };
+
+    const typedRoles = (userTenantRoles as TenantUserRole[]) || [];
+
     // User must have 'admin' role (not 'owner')
-    const userIsAdmin = userTenantRoles?.some(tu => tu.role === 'admin') || false;
+    const userIsAdmin = typedRoles.some((tu: TenantUserRole) => tu.role === 'admin');
     setIsAdmin(userIsAdmin);
   }
 

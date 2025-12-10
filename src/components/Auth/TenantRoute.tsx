@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/contexts/TenantContext';
-import { getDashboardRouteByRole, canAccessRoute } from '@/utils/routing';
+import { getDashboardRouteByRole } from '@/utils/routing';
 
 interface TenantRouteProps {
   children: React.ReactNode;
@@ -18,7 +18,7 @@ interface TenantRouteProps {
 export function TenantRoute({ children, requiredTenantName }: TenantRouteProps) {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [canAccess, setCanAccess] = useState<boolean | null>(null);
-  const { tenant, tenantName, userRole, loading: tenantLoading, isAdmin, isOwner } = useTenant();
+  const { tenantName, userRole, loading: tenantLoading, isAdmin, isOwner } = useTenant();
   const location = useLocation();
 
   useEffect(() => {
