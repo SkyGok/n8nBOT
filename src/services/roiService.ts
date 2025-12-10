@@ -4,8 +4,11 @@
  * All queries use tenant-scoped Supabase client for automatic tenant isolation
  */
 
-import { supabase, getTenantSupabase } from '@/lib/supabase';
+import { supabase, getTenantSupabase, Database } from '@/lib/supabase';
 import { startOfDay, endOfDay } from 'date-fns';
+
+// Database row types
+type AppointmentRow = Database['public']['Tables']['appointments']['Row'];
 
 export interface AppointmentFilters {
   startDate?: Date;
@@ -24,7 +27,7 @@ export async function fetchAppointmentCount(filters?: AppointmentFilters): Promi
     // Fetch all appointments and filter by date in JavaScript for better reliability
     const { data: allAppointments, error } = await tenantSupabase
       .from('appointments')
-      .select('id, appointment_datetime, scheduled_at, created_at');
+      .select('id, appointment_datetime, scheduled_at, created_at') as { data: AppointmentRow[] | null; error: any };
 
     if (error) {
       console.error('[ROI Service] Error fetching appointments:', error);
@@ -39,7 +42,7 @@ export async function fetchAppointmentCount(filters?: AppointmentFilters): Promi
     let filteredAppointments = allAppointments;
     
     if (filters?.startDate || filters?.endDate) {
-      filteredAppointments = allAppointments.filter((apt) => {
+      filteredAppointments = (allAppointments || []).filter((apt) => {
         // Use appointment_datetime, scheduled_at, or created_at (in that order)
         const appointmentDate = apt.appointment_datetime || apt.scheduled_at || apt.created_at;
         if (!appointmentDate) return false;

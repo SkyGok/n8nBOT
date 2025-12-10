@@ -61,7 +61,7 @@ export function LoginPage() {
       // Step 1: Authenticate with Supabase Auth (uses auth.users table)
       // This validates email and password from Authentication users
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email ?? '',
         password,
       });
 
@@ -101,33 +101,28 @@ export function LoginPage() {
 
       // Step 2: Verify/sync user exists in public.users table
       // Check if user exists in public.users
-      type UserRecord = {
-        id: string;
-        email: string | null;
-      };
-
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('id, email')
         .eq('id', data.user.id)
-        .single();
+        .single() as { data: { id: string; email: string | null } | null; error: any };
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found
         console.error('[Login] Error checking public.users:', checkError);
       }
 
-      const typedExistingUser = existingUser as UserRecord | null;
+      const typedExistingUser = existingUser;
 
       // If user doesn't exist in public.users, create them
       if (!typedExistingUser) {
-        const { error: syncError } = await supabase
+        const { error: syncError } = await (supabase
           .from('users')
           .insert({
             id: data.user.id,
-            email: data.user.email || email,
+            email: data.user.email ?? email,
             full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || email.split('@')[0],
             created_at: data.user.created_at,
-          } as any);
+          } as any) as any);
 
         if (syncError) {
           console.warn('[Login] Error syncing user to public.users:', syncError);
@@ -136,10 +131,9 @@ export function LoginPage() {
       } else {
         // Update email if it changed in auth.users
         if (typedExistingUser.email !== data.user.email) {
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({ email: data.user.email || null })
-            .eq('id', data.user.id);
+          // @ts-expect-error - Supabase type inference issue with Database interface
+          const updateQuery = supabase.from('users').update({ email: data.user.email ?? null });
+          const { error: updateError } = await updateQuery.eq('id', data.user.id);
 
           if (updateError) {
             console.warn('[Login] Error updating user email in public.users:', updateError);

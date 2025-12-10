@@ -300,6 +300,20 @@ export interface Database {
           role: string | null;
           created_at: string;
         };
+        Insert: {
+          id: string;
+          email?: string | null;
+          full_name?: string | null;
+          role?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string | null;
+          full_name?: string | null;
+          role?: string | null;
+          created_at?: string;
+        };
       };
       calendar_events: {
         Row: {

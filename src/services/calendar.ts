@@ -4,7 +4,7 @@
  * Priority: Supabase > n8n webhook > localStorage
  */
 
-import { CalendarEvent, CreateCalendarEventInput } from '@/types/calendar';
+import { CalendarEvent, CreateCalendarEventInput, AppointmentRow, CalendarEventRow } from '@/types/calendar';
 import { supabase, getTenantSupabase } from '@/lib/supabase';
 
 const CALENDAR_STORAGE_KEY = 'calendar_events';
@@ -62,7 +62,7 @@ export async function fetchCalendarEvents(
       const { data: allAppointments, error: appointmentsError } = await tenantSupabase
         .from('appointments')
         .select('*')
-        .eq('status', 'Confirmed');
+        .eq('status', 'Confirmed') as { data: AppointmentRow[] | null; error: any };
 
       // Filter appointments by date range
       const appointments = (allAppointments || []).filter((apt) => {
@@ -89,7 +89,7 @@ export async function fetchCalendarEvents(
       }
 
       // Transform calendar_events to CalendarEvent format
-      const calendarEventList: CalendarEvent[] = (calendarEvents || []).map((event) => ({
+      const calendarEventList: CalendarEvent[] = ((calendarEvents || []) as CalendarEventRow[]).map((event) => ({
         id: event.id,
         title: event.title,
         start: new Date(event.start_time),
@@ -117,7 +117,7 @@ export async function fetchCalendarEvents(
           // Only include appointments that don't have a calendar_event_id
           // or whose calendar_event_id doesn't exist in calendar_events
           if (!apt.calendar_event_id) return true;
-          const hasCalendarEvent = calendarEvents?.some(ce => ce.id === apt.calendar_event_id);
+          const hasCalendarEvent = (calendarEvents as CalendarEventRow[] | null)?.some((ce) => ce.id === apt.calendar_event_id);
           return !hasCalendarEvent;
         })
         .map((apt): CalendarEvent | null => {
@@ -128,7 +128,7 @@ export async function fetchCalendarEvents(
           const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Default 1 hour duration
 
           // Create title from appointment data
-          const titleParts = [];
+          const titleParts: string[] = [];
           if (apt.service_type) titleParts.push(apt.service_type);
           if (apt.client_name) titleParts.push(apt.client_name);
           if (apt.therapist_name) titleParts.push(apt.therapist_name);
@@ -295,11 +295,11 @@ export async function createCalendarEvent(
         insertData.user_id = userId;
       }
 
-      const { data, error } = await tenantSupabase
+      const { data, error } = (await (tenantSupabase
         .from('calendar_events')
-        .insert(insertData)
+        .insert(insertData as any) as any)
         .select()
-        .single();
+        .single()) as { data: CalendarEventRow | null; error: any };
 
       if (error) {
         console.error('[Calendar Service] Supabase insert error:', error);
@@ -431,12 +431,9 @@ export async function updateCalendarEvent(
       // Update synced_at when event is modified
       updateData.synced_at = new Date().toISOString();
 
-      const { data, error } = await tenantSupabase
-        .from('calendar_events')
-        .update(updateData)
-        .eq('id', eventId)
-        .select()
-        .single();
+      // @ts-expect-error - Supabase type inference issue with Database interface
+      const updateQuery = tenantSupabase.from('calendar_events').update(updateData);
+      const { data, error } = (await updateQuery.eq('id', eventId).select().single()) as { data: CalendarEventRow | null; error: any };
 
       if (error) {
         console.error('[Calendar Service] Supabase update error:', error);
@@ -732,7 +729,7 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
       .from('calendar_events')
       .select('id')
       .eq('id', event.id)
-      .single();
+      .single() as { data: { id: string } | null; error: any };
 
     const eventData: any = {
       title: event.title,
@@ -753,17 +750,15 @@ async function syncEventToSupabase(event: CalendarEvent): Promise<void> {
     if (existing) {
       // Update existing event
       eventData.updated_at = new Date().toISOString();
-      await tenantSupabase
-        .from('calendar_events')
-        .update(eventData)
-        .eq('id', event.id);
+      // @ts-expect-error - Supabase type inference issue with Database interface
+      const updateQuery = tenantSupabase.from('calendar_events').update(eventData);
+      await updateQuery.eq('id', event.id);
     } else {
       // Insert new event
       eventData.id = event.id;
       eventData.google_event_id = googleEventId;
-      await tenantSupabase
-        .from('calendar_events')
-        .insert(eventData);
+      const insertQuery = tenantSupabase.from('calendar_events').insert(eventData as any) as any;
+      await insertQuery;
     }
   } catch (error) {
     console.error('[Calendar Service] Error syncing event to Supabase:', error);
@@ -800,9 +795,9 @@ async function syncEventsToSupabase(events: CalendarEvent[]): Promise<void> {
     }));
 
     // Use upsert to handle both insert and update
-    await tenantSupabase
+    await (tenantSupabase
       .from('calendar_events')
-      .upsert(eventsToUpsert, { onConflict: 'id' });
+      .upsert(eventsToUpsert as any, { onConflict: 'id' }) as any);
   } catch (error) {
     console.error('[Calendar Service] Error syncing events to Supabase:', error);
     // Don't throw - this is a background operation

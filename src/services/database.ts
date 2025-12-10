@@ -4,9 +4,15 @@
  * All queries use tenant-scoped Supabase client for automatic tenant isolation
  */
 
-import { getTenantSupabase } from '@/lib/supabase';
+import { getTenantSupabase, Database } from '@/lib/supabase';
 import { SummaryStats, TimeSeriesResponse, EventsResponse, EngagementMetrics, PhoneEvent, TimeSeriesDataPoint } from '@/types/api';
 import { formatISO, startOfDay, endOfDay, subDays, subMonths, startOfMonth } from 'date-fns';
+
+// Database row types
+type CallRow = Database['public']['Tables']['calls']['Row'];
+type TimeseriesRow = Database['public']['Tables']['timeseries']['Row'];
+type EngagementMetricsRow = Database['public']['Tables']['engagement_metrics']['Row'];
+type WhatsAppMessageRow = Database['public']['Tables']['whatsapp_messages']['Row'];
 
 /**
  * Fetch summary statistics from calls table
@@ -29,7 +35,7 @@ export async function fetchSummaryStats(startDate?: Date, endDate?: Date): Promi
     query = query.lte('timestamp', endDate.toISOString());
   }
 
-  const { data: calls, error } = await query;
+  const { data: calls, error } = await query as { data: CallRow[] | null; error: any };
 
   if (error) {
     // Enhanced error logging
@@ -54,11 +60,11 @@ export async function fetchSummaryStats(startDate?: Date, endDate?: Date): Promi
   }
 
   const totalCalls = calls.length;
-  const answeredCalls = calls.filter(c => c.status === 'answered').length;
-  const missedCalls = calls.filter(c => c.status === 'missed').length;
+  const answeredCalls = calls.filter((c) => c.status === 'answered').length;
+  const missedCalls = calls.filter((c) => c.status === 'missed').length;
   const answeredCallDurations = calls
-    .filter(c => c.status === 'answered' && c.duration_seconds > 0)
-    .map(c => c.duration_seconds);
+    .filter((c) => c.status === 'answered' && c.duration_seconds > 0)
+    .map((c) => c.duration_seconds);
   
   const totalDuration = answeredCallDurations.reduce((sum, d) => sum + d, 0);
   const averageDuration = answeredCallDurations.length > 0 
@@ -118,7 +124,7 @@ export async function fetchTimeSeriesData(
     .eq('metric', metric)
     .gte('timestamp', startDate.toISOString())
     .lte('timestamp', endDate.toISOString())
-    .order('timestamp', { ascending: true });
+    .order('timestamp', { ascending: true }) as { data: TimeseriesRow[] | null; error: any };
 
   if (error) {
     // Enhanced error logging
@@ -136,7 +142,7 @@ export async function fetchTimeSeriesData(
     return calculateTimeSeriesFromCalls(metric, period, startDate, endDate);
   }
 
-  const data: TimeSeriesDataPoint[] = timeseriesData.map(item => ({
+  const data: TimeSeriesDataPoint[] = (timeseriesData || []).map((item) => ({
     timestamp: item.timestamp,
     value: Number(item.value),
   }));
@@ -167,7 +173,7 @@ async function calculateTimeSeriesFromCalls(
     .select('timestamp, status, duration_seconds')
     .gte('timestamp', startDate.toISOString())
     .lte('timestamp', endDate.toISOString())
-    .order('timestamp', { ascending: true });
+    .order('timestamp', { ascending: true }) as { data: CallRow[] | null; error: any };
 
   if (error) {
     throw new Error(`Failed to fetch calls for timeseries: ${error.message}`);
@@ -265,13 +271,13 @@ export async function fetchEvents(
 
   const { data, error, count } = await query
     .order('timestamp', { ascending: false })
-    .range(from, to);
+    .range(from, to) as { data: CallRow[] | null; error: any; count: number | null };
 
   if (error) {
     throw new Error(`Failed to fetch events: ${error.message}`);
   }
 
-  const events: PhoneEvent[] = (data || []).map(call => ({
+  const events: PhoneEvent[] = (data || []).map((call) => ({
     id: call.id,
     phoneNumber: call.phone_number,
     // Use call_type if available, fallback to direction for backward compatibility
@@ -312,7 +318,7 @@ export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
     .eq('metric_date', today)
     .order('last_updated', { ascending: false })
     .limit(1)
-    .single();
+    .single() as { data: EngagementMetricsRow | null; error: any };
 
   // If we have data from engagement_metrics table, use it
   if (data && !error) {
@@ -344,10 +350,10 @@ export async function fetchEngagementMetrics(): Promise<EngagementMetrics> {
       .from('whatsapp_messages')
       .select('conversation_id')
       .gte('timestamp', todayStart)
-      .lte('timestamp', todayEnd);
+      .lte('timestamp', todayEnd) as { data: WhatsAppMessageRow[] | null; error: any };
     
     const whatsappConversationsCount = whatsappMessages 
-      ? new Set(whatsappMessages.map(m => m.conversation_id)).size 
+      ? new Set(whatsappMessages.map((m) => m.conversation_id)).size 
       : 0;
 
     if (whatsappError) {
@@ -417,7 +423,7 @@ export async function getTotalCustomers(): Promise<number> {
     return 1500;
   }
 
-  const uniqueSet = new Set((uniquePhones || []).map(c => c.phone_number));
+  const uniqueSet = new Set((uniquePhones || []).map((c: CallRow) => c.phone_number));
   return uniqueSet.size || 1500;
 }
 
@@ -463,7 +469,7 @@ export async function fetchWhatsAppConversations(): Promise<WhatsAppConversation
   const { data: messages, error } = await supabase
     .from('whatsapp_messages')
     .select('*')
-    .order('timestamp', { ascending: false });
+    .order('timestamp', { ascending: false }) as { data: WhatsAppMessageRow[] | null; error: any };
 
   if (error) {
     console.error('[Supabase Error] Failed to fetch WhatsApp messages:', {
@@ -482,7 +488,7 @@ export async function fetchWhatsAppConversations(): Promise<WhatsAppConversation
   // Group messages by conversation_id
   const conversationMap = new Map<string, WhatsAppConversation>();
 
-  messages.forEach((msg) => {
+  (messages || []).forEach((msg) => {
     const convId = msg.conversation_id;
     
     if (!conversationMap.has(convId)) {
@@ -564,7 +570,7 @@ export async function fetchConversationMessages(conversationId: string): Promise
     return [];
   }
 
-  return messages.map((msg) => ({
+  return (messages || []).map((msg: WhatsAppMessageRow) => ({
     id: msg.id,
     conversationId: msg.conversation_id,
     messageId: msg.message_id,
