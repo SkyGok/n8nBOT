@@ -41,6 +41,14 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Expose supabase to window for debugging (development only)
+if (typeof window !== 'undefined' && (import.meta.env.DEV || import.meta.env.VITE_DEBUG === 'true')) {
+  (window as any).__SUPABASE__ = supabase;
+  (window as any).__SUPABASE_URL__ = supabaseUrl;
+  (window as any).__SUPABASE_KEY__ = supabaseAnonKey;
+  console.log('[Supabase] Exposed to window.__SUPABASE__ for debugging');
+}
+
 // Tenant-specific Supabase client (set by TenantContext)
 let tenantSupabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 

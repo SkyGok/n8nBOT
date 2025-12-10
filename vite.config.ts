@@ -18,6 +18,24 @@ export default defineConfig(({ mode }) => ({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
   },
+  server: {
+    proxy: {
+      // Proxy requests to local n8n instance
+      '/n8n-proxy': {
+        target: 'http://localhost:5678',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/n8n-proxy/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('n8n proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Proxying to n8n:', req.method, req.url);
+          });
+        },
+      },
+    },
+  },
 }))
 
 

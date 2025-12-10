@@ -57,7 +57,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <Header onMenuClick={toggleSidebar} sidebarOpen={sidebarOpen} />
-      <div className="flex relative">
+      <div className="flex relative" style={{ minHeight: 'calc(100vh - 64px)' }}>
         {/* Mobile/Tablet sidebar overlay */}
         {sidebarOpen && (
           <div
@@ -69,7 +69,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         
         {/* Sidebar */}
         <div 
-          className={`fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${
+          className={`fixed lg:static top-16 lg:top-0 bottom-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${
             sidebarOpen 
               ? 'translate-x-0' 
               : '-translate-x-full lg:translate-x-0 lg:hidden'

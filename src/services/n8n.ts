@@ -3,6 +3,8 @@
  * Handles communication with n8n webhooks for testing connections
  */
 
+import { getN8nWebhookUrl } from '@/utils/n8n';
+
 export interface TestConnectionResult {
   success: boolean;
   message: string;
@@ -21,7 +23,9 @@ export async function testN8nConnection(webhookUrl: string): Promise<TestConnect
   }
 
   try {
-    const response = await fetch(webhookUrl, {
+    // Convert localhost URLs to use proxy in development
+    const url = getN8nWebhookUrl(webhookUrl);
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -76,7 +80,9 @@ export async function testWhatsAppConnection(
   }
 
   try {
-    const response = await fetch(webhookUrl, {
+    // Convert localhost URLs to use proxy in development
+    const url = getN8nWebhookUrl(webhookUrl);
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -123,7 +129,9 @@ export async function testTelegramConnection(
   }
 
   try {
-    const response = await fetch(webhookUrl, {
+    // Convert localhost URLs to use proxy in development
+    const url = getN8nWebhookUrl(webhookUrl);
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -170,7 +178,9 @@ export async function testInstagramConnection(
   }
 
   try {
-    const response = await fetch(webhookUrl, {
+    // Convert localhost URLs to use proxy in development
+    const url = getN8nWebhookUrl(webhookUrl);
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -33,9 +33,7 @@ CREATE TABLE IF NOT EXISTS public.tenant_users (
   role TEXT DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(tenant_id, user_id),
-  CONSTRAINT tenant_users_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE,
-  CONSTRAINT tenant_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
+  UNIQUE(tenant_id, user_id)
 );
 
 -- Indexes for tenant_users
@@ -128,6 +126,16 @@ RETURNS BOOLEAN AS $$
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
+-- Function to check if user is admin or owner in any tenant (for cross-tenant access)
+CREATE OR REPLACE FUNCTION public.user_is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.tenant_users 
+    WHERE user_id = auth.uid() 
+    AND role IN ('admin', 'owner')
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
 -- ============================================
 -- PART 4: ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================
@@ -143,6 +151,19 @@ CREATE POLICY "Users can view their tenants" ON public.tenants
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+  );
+
+-- Admins and owners can view all active tenants (for tenant switching)
+DROP POLICY IF EXISTS "Admins can view all tenants" ON public.tenants;
+CREATE POLICY "Admins can view all tenants" ON public.tenants
+  FOR SELECT USING (
+    -- User is admin or owner in at least one tenant
+    EXISTS (
+      SELECT 1 FROM public.tenant_users 
+      WHERE user_id = auth.uid() 
+      AND role IN ('admin', 'owner')
+    )
+    AND status = 'active'
   );
 
 -- Enable RLS on tenant_users
@@ -167,10 +188,12 @@ CREATE POLICY "Users can update their tenant memberships" ON public.tenant_users
 DROP POLICY IF EXISTS "Users can view their tenant's calls" ON public.calls;
 CREATE POLICY "Users can view their tenant's calls" ON public.calls
   FOR SELECT USING (
+    -- User belongs to the tenant OR user is admin/owner in any tenant
     tenant_id IN (
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's calls" ON public.calls;
@@ -180,6 +203,7 @@ CREATE POLICY "Users can insert their tenant's calls" ON public.calls
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can update their tenant's calls" ON public.calls;
@@ -189,6 +213,7 @@ CREATE POLICY "Users can update their tenant's calls" ON public.calls
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can delete their tenant's calls" ON public.calls;
@@ -198,6 +223,7 @@ CREATE POLICY "Users can delete their tenant's calls" ON public.calls
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- Appointments table RLS
@@ -208,6 +234,7 @@ CREATE POLICY "Users can view their tenant's appointments" ON public.appointment
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's appointments" ON public.appointments;
@@ -217,6 +244,7 @@ CREATE POLICY "Users can insert their tenant's appointments" ON public.appointme
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can update their tenant's appointments" ON public.appointments;
@@ -226,6 +254,7 @@ CREATE POLICY "Users can update their tenant's appointments" ON public.appointme
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can delete their tenant's appointments" ON public.appointments;
@@ -235,6 +264,7 @@ CREATE POLICY "Users can delete their tenant's appointments" ON public.appointme
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- Calendar events table RLS
@@ -245,6 +275,7 @@ CREATE POLICY "Users can view their tenant's calendar events" ON public.calendar
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's calendar events" ON public.calendar_events;
@@ -254,6 +285,7 @@ CREATE POLICY "Users can insert their tenant's calendar events" ON public.calend
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can update their tenant's calendar events" ON public.calendar_events;
@@ -263,6 +295,7 @@ CREATE POLICY "Users can update their tenant's calendar events" ON public.calend
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can delete their tenant's calendar events" ON public.calendar_events;
@@ -272,6 +305,7 @@ CREATE POLICY "Users can delete their tenant's calendar events" ON public.calend
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- Customers table RLS
@@ -282,6 +316,7 @@ CREATE POLICY "Users can view their tenant's customers" ON public.customers
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's customers" ON public.customers;
@@ -291,6 +326,7 @@ CREATE POLICY "Users can insert their tenant's customers" ON public.customers
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can update their tenant's customers" ON public.customers;
@@ -300,6 +336,7 @@ CREATE POLICY "Users can update their tenant's customers" ON public.customers
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can delete their tenant's customers" ON public.customers;
@@ -309,6 +346,7 @@ CREATE POLICY "Users can delete their tenant's customers" ON public.customers
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- WhatsApp messages table RLS
@@ -319,6 +357,7 @@ CREATE POLICY "Users can view their tenant's whatsapp messages" ON public.whatsa
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's whatsapp messages" ON public.whatsapp_messages;
@@ -328,6 +367,7 @@ CREATE POLICY "Users can insert their tenant's whatsapp messages" ON public.what
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can update their tenant's whatsapp messages" ON public.whatsapp_messages;
@@ -337,6 +377,7 @@ CREATE POLICY "Users can update their tenant's whatsapp messages" ON public.what
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- Engagement metrics table RLS
@@ -347,6 +388,7 @@ CREATE POLICY "Users can view their tenant's engagement metrics" ON public.engag
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's engagement metrics" ON public.engagement_metrics;
@@ -356,6 +398,7 @@ CREATE POLICY "Users can insert their tenant's engagement metrics" ON public.eng
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- Timeseries table RLS
@@ -366,6 +409,7 @@ CREATE POLICY "Users can view their tenant's timeseries" ON public.timeseries
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's timeseries" ON public.timeseries;
@@ -375,6 +419,7 @@ CREATE POLICY "Users can insert their tenant's timeseries" ON public.timeseries
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- Status summary table RLS
@@ -385,6 +430,7 @@ CREATE POLICY "Users can view their tenant's status summary" ON public.status_su
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 DROP POLICY IF EXISTS "Users can insert their tenant's status summary" ON public.status_summary;
@@ -394,6 +440,7 @@ CREATE POLICY "Users can insert their tenant's status summary" ON public.status_
       SELECT tenant_id FROM public.tenant_users 
       WHERE user_id = auth.uid()
     )
+    OR public.user_is_admin()
   );
 
 -- ============================================
@@ -446,6 +493,7 @@ COMMENT ON FUNCTION public.get_user_tenant_id() IS 'Returns the primary tenant_i
 COMMENT ON FUNCTION public.get_user_tenant_ids() IS 'Returns all tenant_ids the current authenticated user belongs to.';
 COMMENT ON FUNCTION public.user_belongs_to_tenant(UUID) IS 'Checks if the current authenticated user belongs to the specified tenant.';
 COMMENT ON FUNCTION public.user_has_tenant_role(UUID, TEXT) IS 'Checks if the current authenticated user has the specified role in the tenant.';
+COMMENT ON FUNCTION public.user_is_admin() IS 'Checks if the current authenticated user is an admin or owner in any tenant. Used for cross-tenant access.';
 
 -- ============================================
 -- COMPLETE!

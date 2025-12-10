@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useTenant } from '@/contexts/TenantContext';
+import { getDashboardRouteByRole } from '@/utils/routing';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requireTenant = true }: ProtectedRouteProps) {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const { tenant, loading: tenantLoading, error: tenantError } = useTenant();
+  const { tenant, userRole, tenantName, loading: tenantLoading, error: tenantError } = useTenant();
   const location = useLocation();
 
   useEffect(() => {
@@ -105,6 +106,14 @@ export function ProtectedRoute({ children, requireTenant = true }: ProtectedRout
         </div>
       </div>
     );
+  }
+
+  // If user is on root path "/", redirect to their role-based dashboard
+  if (location.pathname === '/' && userRole && tenantName) {
+    const dashboardRoute = getDashboardRouteByRole(userRole, tenantName);
+    if (dashboardRoute !== '/') {
+      return <Navigate to={dashboardRoute} replace />;
+    }
   }
 
   // All checks passed, render children

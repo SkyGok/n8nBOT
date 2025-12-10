@@ -1,26 +1,28 @@
 -- ============================================
 -- MIGRATION SCRIPT: SINGLE-TENANT TO MULTI-TENANT
 -- Run this AFTER MULTI_TENANT_SCHEMA.sql
--- Assigns all existing data to a default tenant
+-- Creates Spa and Dentist tenants with their n8n workflow URLs
 -- ============================================
 
 DO $$
 DECLARE
-  v_default_tenant_id UUID;
+  v_spa_tenant_id UUID;
+  v_dentist_tenant_id UUID;
   v_user_id UUID;
+  null_count INTEGER;
 BEGIN
   -- ============================================
-  -- STEP 1: CREATE DEFAULT TENANT
+  -- STEP 1: CREATE SPA TENANT
   -- ============================================
   
-  -- Check if default tenant already exists
-  SELECT id INTO v_default_tenant_id 
+  -- Check if Spa tenant already exists
+  SELECT id INTO v_spa_tenant_id 
   FROM public.tenants 
-  WHERE name = 'Default Tenant' 
+  WHERE name = 'Spa' 
   LIMIT 1;
   
-  -- Create default tenant if it doesn't exist
-  IF v_default_tenant_id IS NULL THEN
+  -- Create Spa tenant if it doesn't exist
+  IF v_spa_tenant_id IS NULL THEN
     INSERT INTO public.tenants (
       name,
       subdomain,
@@ -28,116 +30,90 @@ BEGIN
       status,
       config
     ) VALUES (
-      'Default Tenant',
-      'default',
-      COALESCE(
-        (SELECT n8n_webhook_base_url FROM public.tenants LIMIT 1),
-        'https://n8n.example.com/webhook/default'
-      ),
+      'Spa',
+      'spa',
+      'http://localhost:5678/workflow/n39dwyI1GCjXuan8',
       'active',
-      '{"migrated": true, "migration_date": "' || NOW()::text || '"}'::jsonb
+      jsonb_build_object(
+        'migrated', true,
+        'migration_date', NOW()::text,
+        'type', 'spa',
+        'description', 'Spa with massage therapists'
+      )
     )
-    RETURNING id INTO v_default_tenant_id;
+    RETURNING id INTO v_spa_tenant_id;
     
-    RAISE NOTICE 'Created default tenant with ID: %', v_default_tenant_id;
+    RAISE NOTICE 'Created Spa tenant with ID: %', v_spa_tenant_id;
   ELSE
-    RAISE NOTICE 'Default tenant already exists with ID: %', v_default_tenant_id;
+    RAISE NOTICE 'Spa tenant already exists with ID: %', v_spa_tenant_id;
   END IF;
   
   -- ============================================
-  -- STEP 2: ASSIGN ALL EXISTING USERS TO DEFAULT TENANT
+  -- STEP 2: CREATE DENTIST TENANT
   -- ============================================
   
-  -- Loop through all users and assign them to default tenant
-  FOR v_user_id IN 
-    SELECT id FROM public.users
-    WHERE id NOT IN (
-      SELECT user_id FROM public.tenant_users WHERE tenant_id = v_default_tenant_id
-    )
-  LOOP
-    INSERT INTO public.tenant_users (
-      tenant_id,
-      user_id,
-      role
+  -- Check if Dentist tenant already exists
+  SELECT id INTO v_dentist_tenant_id 
+  FROM public.tenants 
+  WHERE name = 'Dentist' 
+  LIMIT 1;
+  
+  -- Create Dentist tenant if it doesn't exist
+  IF v_dentist_tenant_id IS NULL THEN
+    INSERT INTO public.tenants (
+      name,
+      subdomain,
+      n8n_webhook_base_url,
+      status,
+      config
     ) VALUES (
-      v_default_tenant_id,
-      v_user_id,
-      'owner' -- Make all existing users owners of default tenant
+      'Dentist',
+      'dentist',
+      'http://localhost:5678/workflow/GtAxaRH2PXmv0uOg',
+      'active',
+      jsonb_build_object(
+        'migrated', true,
+        'migration_date', NOW()::text,
+        'type', 'dentist',
+        'description', 'Dental practice'
+      )
     )
-    ON CONFLICT (tenant_id, user_id) DO NOTHING;
+    RETURNING id INTO v_dentist_tenant_id;
     
-    RAISE NOTICE 'Assigned user % to default tenant', v_user_id;
-  END LOOP;
+    RAISE NOTICE 'Created Dentist tenant with ID: %', v_dentist_tenant_id;
+  ELSE
+    RAISE NOTICE 'Dentist tenant already exists with ID: %', v_dentist_tenant_id;
+  END IF;
   
   -- ============================================
-  -- STEP 3: ASSIGN ALL EXISTING DATA TO DEFAULT TENANT
+  -- STEP 3: ASSIGN ALL EXISTING DATA TO TENANTS
+  -- Note: You'll need to manually assign users to tenants
+  -- Example SQL to assign a user to a tenant:
+  -- INSERT INTO public.tenant_users (tenant_id, user_id, role) 
+  -- VALUES (v_spa_tenant_id, 'user-uuid-here', 'owner');
   -- ============================================
   
-  -- Update calls table
-  UPDATE public.calls
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
+  RAISE NOTICE '============================================';
+  RAISE NOTICE 'IMPORTANT: You need to manually assign users to tenants';
+  RAISE NOTICE 'Example:';
+  RAISE NOTICE '  INSERT INTO public.tenant_users (tenant_id, user_id, role)';
+  RAISE NOTICE '  VALUES (''%'', ''user-uuid'', ''owner'');', v_spa_tenant_id;
+  RAISE NOTICE '============================================';
   
-  RAISE NOTICE 'Assigned % calls to default tenant', (SELECT COUNT(*) FROM public.calls WHERE tenant_id = v_default_tenant_id);
+  -- ============================================
+  -- STEP 4: ASSIGN EXISTING DATA TO TENANTS
+  -- Note: You may need to manually assign data to the correct tenant
+  -- For now, we'll leave existing data unassigned (tenant_id = NULL)
+  -- You can update them later based on your business logic
+  -- ============================================
   
-  -- Update appointments table
-  UPDATE public.appointments
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % appointments to default tenant', (SELECT COUNT(*) FROM public.appointments WHERE tenant_id = v_default_tenant_id);
-  
-  -- Update calendar_events table
-  UPDATE public.calendar_events
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % calendar events to default tenant', (SELECT COUNT(*) FROM public.calendar_events WHERE tenant_id = v_default_tenant_id);
-  
-  -- Update customers table
-  UPDATE public.customers
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % customers to default tenant', (SELECT COUNT(*) FROM public.customers WHERE tenant_id = v_default_tenant_id);
-  
-  -- Update whatsapp_messages table
-  UPDATE public.whatsapp_messages
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % WhatsApp messages to default tenant', (SELECT COUNT(*) FROM public.whatsapp_messages WHERE tenant_id = v_default_tenant_id);
-  
-  -- Update engagement_metrics table
-  UPDATE public.engagement_metrics
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % engagement metrics to default tenant', (SELECT COUNT(*) FROM public.engagement_metrics WHERE tenant_id = v_default_tenant_id);
-  
-  -- Update timeseries table
-  UPDATE public.timeseries
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % timeseries records to default tenant', (SELECT COUNT(*) FROM public.timeseries WHERE tenant_id = v_default_tenant_id);
-  
-  -- Update status_summary table
-  UPDATE public.status_summary
-  SET tenant_id = v_default_tenant_id
-  WHERE tenant_id IS NULL;
-  
-  RAISE NOTICE 'Assigned % status summary records to default tenant', (SELECT COUNT(*) FROM public.status_summary WHERE tenant_id = v_default_tenant_id);
+  RAISE NOTICE 'Existing data will remain unassigned. Assign manually as needed.';
   
   -- ============================================
   -- STEP 4: VERIFICATION
   -- ============================================
   
   -- Check for any remaining NULL tenant_ids (should be 0)
-  DO $$
-  DECLARE
-    null_count INTEGER;
-  BEGIN
     SELECT COUNT(*) INTO null_count
     FROM (
       SELECT tenant_id FROM public.calls WHERE tenant_id IS NULL
@@ -162,16 +138,16 @@ BEGIN
     ELSE
       RAISE NOTICE '✓ All records have been assigned to a tenant. Migration complete!';
     END IF;
-  END $$;
   
   RAISE NOTICE '============================================';
   RAISE NOTICE 'MIGRATION COMPLETE!';
-  RAISE NOTICE 'Default tenant ID: %', v_default_tenant_id;
-  RAISE NOTICE 'All existing data has been assigned to the default tenant.';
+  RAISE NOTICE 'Spa tenant ID: %', v_spa_tenant_id;
+  RAISE NOTICE 'Dentist tenant ID: %', v_dentist_tenant_id;
   RAISE NOTICE 'Next steps:';
-  RAISE NOTICE '1. Update frontend to use TenantContext';
-  RAISE NOTICE '2. Test authentication and tenant loading';
-  RAISE NOTICE '3. Create additional tenants as needed';
+  RAISE NOTICE '1. Create users in Supabase Auth';
+  RAISE NOTICE '2. Assign users to tenants using tenant_users table';
+  RAISE NOTICE '3. For admin users, assign them to multiple tenants with admin role';
+  RAISE NOTICE '4. Test authentication and tenant switching';
   RAISE NOTICE '============================================';
   
 END $$;
