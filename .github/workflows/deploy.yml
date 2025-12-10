@@ -54,6 +54,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          NODE_ENV: production
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_USE_SUPABASE: ${{ secrets.VITE_USE_SUPABASE || 'true' }}
@@ -74,10 +75,12 @@ jobs:
             touch dist/.nojekyll
           fi
           # Check if paths in index.html use correct base path
-          if grep -q "/n8nBOT/" dist/index.html; then
+          if grep -q 'href="/n8nBOT/' dist/index.html || grep -q 'src="/n8nBOT/' dist/index.html; then
             echo "✅ Build output uses correct base path (/n8nBOT/)"
           else
             echo "⚠️  WARNING: Build output may not use correct base path!"
+            echo "Checking index.html content:"
+            head -20 dist/index.html | grep -E '(href|src)=' || true
           fi
           # Check if Supabase URL is in the built JS (without exposing the actual URL)
           if grep -q "placeholder.supabase.co" dist/assets/*.js 2>/dev/null; then
