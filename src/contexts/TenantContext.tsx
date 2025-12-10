@@ -67,7 +67,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Check if user is admin or owner (by checking tenant_users)
-      const { data: userTenantRoles, error: rolesError } = await supabase
+      const { data: userTenantRoles } = await supabase
         .from('tenant_users')
         .select('role')
         .eq('user_id', user.id);

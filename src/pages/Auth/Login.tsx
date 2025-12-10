@@ -101,6 +101,11 @@ export function LoginPage() {
 
       // Step 2: Verify/sync user exists in public.users table
       // Check if user exists in public.users
+      type UserRecord = {
+        id: string;
+        email: string | null;
+      };
+
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('id, email')
@@ -111,8 +116,10 @@ export function LoginPage() {
         console.error('[Login] Error checking public.users:', checkError);
       }
 
+      const typedExistingUser = existingUser as UserRecord | null;
+
       // If user doesn't exist in public.users, create them
-      if (!existingUser) {
+      if (!typedExistingUser) {
         const { error: syncError } = await supabase
           .from('users')
           .insert({
@@ -120,7 +127,7 @@ export function LoginPage() {
             email: data.user.email || email,
             full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || email.split('@')[0],
             created_at: data.user.created_at,
-          });
+          } as any);
 
         if (syncError) {
           console.warn('[Login] Error syncing user to public.users:', syncError);
@@ -128,10 +135,10 @@ export function LoginPage() {
         }
       } else {
         // Update email if it changed in auth.users
-        if (existingUser.email !== data.user.email) {
+        if (typedExistingUser.email !== data.user.email) {
           const { error: updateError } = await supabase
             .from('users')
-            .update({ email: data.user.email })
+            .update({ email: data.user.email || null })
             .eq('id', data.user.id);
 
           if (updateError) {

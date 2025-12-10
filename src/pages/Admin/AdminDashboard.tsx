@@ -17,7 +17,7 @@ interface TenantStats {
 }
 
 export const AdminDashboard: React.FC = () => {
-  const { isAdmin, availableTenants } = useTenant();
+  const { isAdmin } = useTenant();
   const [tenantStats, setTenantStats] = useState<TenantStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,13 @@ export const AdminDashboard: React.FC = () => {
       setError(null);
 
       // Fetch all tenants
+      type TenantRecord = {
+        id: string;
+        name: string;
+        status: string;
+        created_at: string;
+      };
+
       const { data: tenants, error: tenantsError } = await supabase
         .from('tenants')
         .select('id, name, status, created_at')
@@ -43,8 +50,10 @@ export const AdminDashboard: React.FC = () => {
         throw new Error(`Failed to load tenants: ${tenantsError.message}`);
       }
 
+      const typedTenants = (tenants as TenantRecord[]) || [];
+
       // Fetch user counts for each tenant
-      const statsPromises = (tenants || []).map(async (tenant) => {
+      const statsPromises = typedTenants.map(async (tenant: TenantRecord) => {
         const { count, error: countError } = await supabase
           .from('tenant_users')
           .select('*', { count: 'exact', head: true })
