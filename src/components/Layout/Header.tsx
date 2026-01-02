@@ -10,9 +10,11 @@ import { useTenant } from '@/contexts/TenantContext';
 interface HeaderProps {
   onMenuClick: () => void;
   sidebarOpen: boolean;
+  onNotificationsClick: () => void;
+  notificationsOpen: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen, onNotificationsClick, notificationsOpen }) => {
   const { t } = useI18n();
   const { tenant, availableTenants, isAdmin, isOwner, switchTenant } = useTenant();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -48,39 +50,21 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
             aria-label={sidebarOpen ? "Close menu" : "Open menu"}
             aria-expanded={sidebarOpen}
           >
-            {sidebarOpen ? (
-              // Close icon (X)
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            ) : (
-              // Menu icon (hamburger)
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            )}
+            {/* Menu icon (hamburger) - always visible */}
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
           </button>
           
           <div className="flex items-center space-x-3">
@@ -99,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                   >
                     <span className="font-medium text-sm sm:text-base">{tenant.name}</span>
                     <svg
-                      className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 transition-transform duration-150 ease-out ${dropdownOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -115,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
                 
                 {/* Dropdown menu - only for admins (not owners) */}
                 {dropdownOpen && isAdmin && !isOwner && availableTenants.length > 1 && (
-                  <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                  <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 dropdown-animation">
                     {availableTenants.map((t) => (
                       <button
                         key={t.id}
@@ -149,8 +133,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, sidebarOpen }) => {
         <nav aria-label="Main navigation">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button
-              className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md p-2 sm:px-3 sm:py-2 touch-manipulation transition-colors"
+              onClick={onNotificationsClick}
+              className={`relative text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md p-2 sm:px-3 sm:py-2 touch-manipulation transition-colors ${
+                notificationsOpen ? 'bg-gray-100 dark:bg-gray-700' : ''
+              }`}
               aria-label={t('common.notifications')}
+              aria-expanded={notificationsOpen}
             >
               <svg
                 className="w-5 h-5 sm:w-6 sm:h-6"

@@ -71,4 +71,31 @@ export interface EngagementMetrics {
   lastUpdated: string; // ISO 8601 timestamp
 }
 
+// Dashboard overview - single RPC response containing all dashboard data
+export interface DashboardOverview {
+  cache_version?: number; // PHASE 3: Cache version for invalidation
+  summary: SummaryStats;
+  engagement: {
+    appointmentsViaAgent: number;
+    confirmedAppointments: number;
+    whatsappConversations: number;
+    whatsappMessages: number;
+    totalCustomers: number;
+  };
+  timeseries: TimeSeriesDataPoint[];
+  statusBreakdown: {
+    answered: number;
+    missed: number;
+    other: number;
+  };
+  recentMetrics: Array<{
+    day: string;
+    totalCalls: number;
+    answeredCalls: number;
+    missedCalls: number;
+    appointments: number;
+    revenue: number;
+  }>;
+}
+
 

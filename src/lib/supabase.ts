@@ -63,6 +63,12 @@ export function setTenantSupabaseClient(client: ReturnType<typeof createClient<D
 /**
  * Get the tenant-specific Supabase client
  * Use this in all data service functions to ensure tenant isolation
+ * 
+ * PHASE 2: Now uses schema-per-tenant architecture
+ * - Dashboard queries use RPC functions that automatically set search_path to tenant schema
+ * - Other queries can continue using current approach (RLS still works as fallback)
+ * - RPC functions handle schema switching internally
+ * 
  * @throws Error if tenant client is not initialized
  */
 export function getTenantSupabase(): ReturnType<typeof createClient<Database>> {
@@ -644,6 +650,56 @@ export interface Database {
           assigned_station?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      vehicle_inventory: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          vin: string;
+          make: string;
+          model: string;
+          year: number;
+          status: 'Available' | 'Sold' | 'Reserved' | 'In Service' | 'Pending';
+          price: number;
+          features: string | null;
+          test_drive_available: boolean;
+          created_at: string;
+          updated_at: string;
+          created_by: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          tenant_id?: string; // Auto-set from JWT if not provided
+          vin: string;
+          make: string;
+          model: string;
+          year: number;
+          status?: 'Available' | 'Sold' | 'Reserved' | 'In Service' | 'Pending';
+          price: number;
+          features?: string | null;
+          test_drive_available?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          created_by?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          vin?: string;
+          make?: string;
+          model?: string;
+          year?: number;
+          status?: 'Available' | 'Sold' | 'Reserved' | 'In Service' | 'Pending';
+          price?: number;
+          features?: string | null;
+          test_drive_available?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          created_by?: string | null;
+          metadata?: Record<string, unknown>;
         };
       };
     };

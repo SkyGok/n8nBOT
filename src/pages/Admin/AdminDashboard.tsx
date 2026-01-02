@@ -5,6 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTenant } from '@/contexts/TenantContext';
 import { supabase } from '@/lib/supabase';
 
@@ -17,7 +18,8 @@ interface TenantStats {
 }
 
 export const AdminDashboard: React.FC = () => {
-  const { isAdmin } = useTenant();
+  const { isAdmin, switchTenant } = useTenant();
+  const navigate = useNavigate();
   const [tenantStats, setTenantStats] = useState<TenantStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +43,11 @@ export const AdminDashboard: React.FC = () => {
         created_at: string;
       };
 
+      // Fetch ALL tenants (no status filter) - admin should see everything
       const { data: tenants, error: tenantsError } = await supabase
         .from('tenants')
         .select('id, name, status, created_at')
-        .order('created_at', { ascending: false });
+        .order('name', { ascending: true }); // Order by name for easier browsing
 
       if (tenantsError) {
         throw new Error(`Failed to load tenants: ${tenantsError.message}`);
@@ -80,6 +83,18 @@ export const AdminDashboard: React.FC = () => {
       console.error('[AdminDashboard] Error loading stats:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewTenantDashboard = async (tenantId: string, tenantName: string) => {
+    try {
+      // Switch to the selected tenant
+      await switchTenant(tenantId);
+      // Navigate to the tenant's dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('[AdminDashboard] Error switching tenant:', err);
+      setError(`Failed to switch to ${tenantName} dashboard: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -224,12 +239,15 @@ export const AdminDashboard: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Created
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {tenantStats.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                       No tenants found
                     </td>
                   </tr>
@@ -257,6 +275,15 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {new Date(tenant.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleViewTenantDashboard(tenant.id, tenant.name)}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                          title={`View ${tenant.name} dashboard`}
+                        >
+                          View Dashboard
+                        </button>
                       </td>
                     </tr>
                   ))

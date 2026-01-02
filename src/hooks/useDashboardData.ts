@@ -4,14 +4,16 @@
  */
 
 import React, { useEffect } from 'react';
+import { useTenant } from '@/contexts/TenantContext';
 import { useDashboardStore } from '@/store/useDashboardStore';
-import { SummaryStats, TimeSeriesResponse, EventsResponse, EngagementMetrics } from '@/types/api';
+import { SummaryStats, TimeSeriesResponse, EventsResponse, EngagementMetrics, DashboardOverview } from '@/types/api';
 import {
   fetchSummaryStats,
   fetchTimeSeriesData,
   fetchEvents,
   fetchEngagementMetrics,
   getTotalCustomers,
+  fetchDashboardOverview,
 } from '@/services/database';
 
 // Check if we should use Supabase or mock data
@@ -46,6 +48,7 @@ async function fetchApi<T>(endpoint: string): Promise<{ success: true; data: T }
  * Optionally filter by date range
  */
 export function useSummaryStats(startDate?: Date, endDate?: Date) {
+  const { tenant } = useTenant();
   const {
     summaryStats,
     isLoadingSummary,
@@ -57,6 +60,9 @@ export function useSummaryStats(startDate?: Date, endDate?: Date) {
 
   useEffect(() => {
     const fetchSummary = async () => {
+      // Don't fetch if no tenant is loaded
+      if (!tenant?.id) return;
+      
       setLoadingSummary(true);
       setSummaryError(null);
       
@@ -80,14 +86,10 @@ export function useSummaryStats(startDate?: Date, endDate?: Date) {
       }
     };
 
-    // If date filters are provided, always fetch (for filtered views)
-    // If no date filters, only fetch if no data exists yet (for overall stats)
-    if (startDate || endDate) {
-      fetchSummary();
-    } else if (!summaryStats) {
-      fetchSummary();
-    }
-  }, [startDate?.toISOString(), endDate?.toISOString()]);
+    // Always fetch when tenant changes or date filters change
+    // This ensures data is refreshed when switching tenants
+    fetchSummary();
+  }, [tenant?.id, startDate?.toISOString(), endDate?.toISOString()]);
 
   return { summaryStats, isLoadingSummary, summaryError };
 }
@@ -96,6 +98,7 @@ export function useSummaryStats(startDate?: Date, endDate?: Date) {
  * Hook to fetch time series data
  */
 export function useTimeSeriesData(metric: 'calls' | 'duration' | 'answered_rate' = 'calls', period: 'hour' | 'day' | 'week' | 'month' = 'hour') {
+  const { tenant } = useTenant();
   const {
     timeSeriesData,
     isLoadingTimeSeries,
@@ -107,6 +110,9 @@ export function useTimeSeriesData(metric: 'calls' | 'duration' | 'answered_rate'
 
   useEffect(() => {
     const fetchTimeSeries = async () => {
+      // Don't fetch if no tenant is loaded
+      if (!tenant?.id) return;
+      
       setLoadingTimeSeries(true);
       setTimeSeriesError(null);
       
@@ -133,7 +139,7 @@ export function useTimeSeriesData(metric: 'calls' | 'duration' | 'answered_rate'
     };
 
     fetchTimeSeries();
-  }, [metric, period, setTimeSeriesData, setLoadingTimeSeries, setTimeSeriesError]);
+  }, [tenant?.id, metric, period, setTimeSeriesData, setLoadingTimeSeries, setTimeSeriesError]);
 
   return { timeSeriesData, isLoadingTimeSeries, timeSeriesError };
 }
@@ -142,6 +148,7 @@ export function useTimeSeriesData(metric: 'calls' | 'duration' | 'answered_rate'
  * Hook to fetch events list
  */
 export function useEvents(page: number = 1, pageSize: number = 50, filters?: { status?: string; direction?: string }) {
+  const { tenant } = useTenant();
   const {
     eventsData,
     isLoadingEvents,
@@ -153,6 +160,9 @@ export function useEvents(page: number = 1, pageSize: number = 50, filters?: { s
 
   useEffect(() => {
     const fetchEventsData = async () => {
+      // Don't fetch if no tenant is loaded
+      if (!tenant?.id) return;
+      
       setLoadingEvents(true);
       setEventsError(null);
       
@@ -189,7 +199,7 @@ export function useEvents(page: number = 1, pageSize: number = 50, filters?: { s
     };
 
     fetchEventsData();
-  }, [page, pageSize, filters?.status, filters?.direction, setEventsData, setLoadingEvents, setEventsError]);
+  }, [tenant?.id, page, pageSize, filters?.status, filters?.direction, setEventsData, setLoadingEvents, setEventsError]);
 
   return { eventsData, isLoadingEvents, eventsError };
 }
@@ -198,6 +208,7 @@ export function useEvents(page: number = 1, pageSize: number = 50, filters?: { s
  * Hook to fetch engagement metrics
  */
 export function useEngagementMetrics() {
+  const { tenant } = useTenant();
   const {
     engagementMetrics,
     isLoadingEngagement,
@@ -209,6 +220,9 @@ export function useEngagementMetrics() {
 
   useEffect(() => {
     const fetchEngagement = async () => {
+      // Don't fetch if no tenant is loaded
+      if (!tenant?.id) return;
+      
       setLoadingEngagement(true);
       setEngagementError(null);
       
@@ -242,7 +256,7 @@ export function useEngagementMetrics() {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [setEngagementMetrics, setLoadingEngagement, setEngagementError]);
+  }, [tenant?.id, setEngagementMetrics, setLoadingEngagement, setEngagementError]);
 
   return { engagementMetrics, isLoadingEngagement, engagementError };
 }
@@ -275,3 +289,63 @@ export function useTotalCustomers() {
   return { totalCustomers, isLoading };
 }
 
+/**
+ * ⚡ PERFORMANCE OPTIMIZED: Single hook that fetches all dashboard data in one RPC call
+ * This replaces multiple separate hooks and reduces database round trips from 5+ to 1
+ */
+export function useDashboardOverview(startDate?: Date, endDate?: Date) {
+  const { tenant } = useTenant();
+  const [overview, setOverview] = React.useState<DashboardOverview | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchOverview = async () => {
+      // Don't fetch if no tenant is loaded
+      if (!tenant?.id) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        if (USE_SUPABASE) {
+          const data = await fetchDashboardOverview(startDate, endDate);
+          setOverview(data);
+        } else {
+          // Fallback: still use separate calls for mock data
+          const [summary, engagement] = await Promise.all([
+            fetchSummaryStats(startDate, endDate),
+            fetchEngagementMetrics(),
+          ]);
+          
+          setOverview({
+            summary,
+            engagement: {
+              appointmentsViaAgent: engagement.appointmentsViaAgent,
+              confirmedAppointments: engagement.appointmentsViaAgent,
+              whatsappConversations: engagement.whatsappConversations,
+              whatsappMessages: 0,
+              totalCustomers: 0,
+            },
+            timeseries: [],
+            statusBreakdown: {
+              answered: summary.answeredCalls,
+              missed: summary.missedCalls,
+              other: summary.totalCalls - summary.answeredCalls - summary.missedCalls,
+            },
+            recentMetrics: [],
+          });
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard overview');
+        console.error('[Dashboard Overview] Error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOverview();
+  }, [tenant?.id, startDate?.toISOString(), endDate?.toISOString()]);
+
+  return { overview, isLoading, error };
+}

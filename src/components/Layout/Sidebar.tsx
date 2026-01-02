@@ -228,18 +228,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose, onToggle }) => {
       role="complementary" 
       aria-label="Sidebar navigation"
     >
-      {/* Header with close/toggle button */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+      {/* Header */}
+      <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('common.menu')}</h2>
-        <button
-          onClick={onClose || onToggle}
-          className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 touch-manipulation transition-colors"
-          aria-label="Close menu"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
       
       <nav className="p-4 flex-1 overflow-y-auto pb-4" aria-label="Main navigation">

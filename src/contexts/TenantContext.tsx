@@ -273,11 +273,17 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       } else if (event === 'SIGNED_OUT') {
         setTenant(null);
         setTenantSupabase(null);
-        setTenantSupabaseClient(null); // ✅ Clear tenant client on sign out
-        setUserRole(null);
-        setTenantName(null);
-        localStorage.removeItem('current_tenant_id');
-        setLoading(false);
+      setTenantSupabaseClient(null); // ✅ Clear tenant client on sign out
+      setUserRole(null);
+      setTenantName(null);
+      localStorage.removeItem('current_tenant_id');
+      // Reset dashboard store on sign out
+      if (typeof window !== 'undefined') {
+        import('@/store/useDashboardStore').then(({ useDashboardStore }) => {
+          useDashboardStore.getState().reset();
+        });
+      }
+      setLoading(false);
       }
     });
 
@@ -299,11 +305,22 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     
+    // Reset dashboard store when switching tenants to avoid showing stale data
+    if (typeof window !== 'undefined') {
+      const { useDashboardStore } = await import('@/store/useDashboardStore');
+      useDashboardStore.getState().reset();
+    }
+    
     await loadTenant(tenantId);
   }, [loadTenant, isAdmin, isOwner]);
 
   const refreshTenant = useCallback(async () => {
     if (tenant?.id) {
+      // Reset dashboard store when refreshing tenant to avoid showing stale data
+      if (typeof window !== 'undefined') {
+        const { useDashboardStore } = await import('@/store/useDashboardStore');
+        useDashboardStore.getState().reset();
+      }
       await loadTenant(tenant.id);
     }
   }, [tenant?.id, loadTenant]);
